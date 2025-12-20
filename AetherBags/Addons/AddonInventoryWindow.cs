@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Extensions;
@@ -15,58 +17,33 @@ namespace AetherBags.Addons;
 
 public class AddonInventoryWindow : NativeAddon
 {
-    private InventoryCategoryNode _categoryNode;
-    private InventoryDragDropNode _dragDropNode;
+    private WrappingGridNode<InventoryCategoryNode> _categoriesNode;
+
+    // Window constraints
+    private const float MinWindowWidth = 300;
+    private const float MaxWindowWidth = 800;
+    private const float MinWindowHeight = 200;
+    private const float MaxWindowHeight = 1000;
+
+    // Layout settings
+    private const float CategorySpacing = 10;
+    private const float ItemSize = 40;
+    private const float ItemPadding = 6;
+
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
-        _categoryNode = new InventoryCategoryNode
+        addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
+        _categoriesNode = new WrappingGridNode<InventoryCategoryNode>
         {
             Position = ContentStartPosition,
             Size = ContentSize,
-            Category = new CategoryInfo
-            {
-                Name = "AetherBags",
-            },
-            Items = InventoryState.GetInventoryItems()
+            HorizontalSpacing = CategorySpacing,
+            VerticalSpacing = CategorySpacing
         };
-        _categoryNode.AttachNode(this);
-        /*
-        var data = InventoryState.GetInventoryItems().Find(item => item.Name.Contains("Cookie"));
+        _categoriesNode.AttachNode(this);
 
-
-        if (data != null)
-        {
-            var item = data.Item;
-            _dragDropNode = new InventoryDragDropNode
-            {
-                Size = new Vector2(48),
-                IsVisible = true,
-                IconId = data.IconId,
-                AcceptedType = DragDropType.Nothing,
-                IsDraggable = false,
-                Payload = new DragDropPayload
-                {
-                    Type = DragDropType.Item,
-                    Int1 = (int)data.Item.Container,
-                    Int2 = (int)data.Item.ItemId,
-                },
-                IsClickable = true,
-                OnRollOver = node => node.ShowInventoryItemTooltip(data.Item.Container, data.Item.Slot),
-                OnRollOut = node => node.HideTooltip(),
-                OnClicked = _ =>
-                {
-
-                    AgentInventoryContext* context = AgentInventoryContext.Instance();
-                    context->OpenForItemSlot(data.Item.Container, data.Item.Slot, 0, context->AddonId);
-                    //item.UseItem();
-                },
-                ItemInfo = data
-            };
-            _dragDropNode.AttachNode(this);
-        }
-        */
-
+        RefreshCategories();
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
@@ -76,11 +53,94 @@ public class AddonInventoryWindow : NativeAddon
 
     private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
     {
+        RefreshCategories();
+    }
 
+    protected override unsafe void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData) {
+        RefreshCategories();
+    }
+
+    private void RefreshCategories()
+    {
+        var categories = InventoryState.GetInventoryItemCategories();
+
+        float maxContentWidth = MaxWindowWidth - (ContentStartPosition.X * 2);
+        int maxItemsPerLine = CalculateOptimalItemsPerLine(maxContentWidth);
+
+        _categoriesNode.SyncWithListData(
+            categories,
+            node => node.CategorizedInventory,
+            data =>
+            {
+                var node = new InventoryCategoryNode
+                {
+                    Size = ContentSize with { Y = 120 },
+                    CategorizedInventory = data
+                };
+
+                UpdateItemsPerLine(node, maxItemsPerLine);
+                return node;
+            });
+
+        foreach (InventoryCategoryNode node in _categoriesNode.GetNodes<InventoryCategoryNode>())
+        {
+            UpdateItemsPerLine(node, maxItemsPerLine);
+        }
+
+        AutoSizeWindow();
+    }
+
+    private static void UpdateItemsPerLine(InventoryCategoryNode node, int maxItemsPerLine)
+    {
+        int itemCount = node.CategorizedInventory.Items.Count;
+        int itemsPerLine = Math.Min(itemCount, maxItemsPerLine);
+        node.SetItemsPerLine(itemsPerLine);
+    }
+
+    private int CalculateOptimalItemsPerLine(float availableWidth)
+    {
+        float itemWithPadding = ItemSize + ItemPadding;
+        int maxItems = (int)Math.Floor((availableWidth + ItemPadding) / itemWithPadding);
+
+        return Math.Clamp(maxItems, 1, 15);
+    }
+
+    private void AutoSizeWindow()
+    {
+        List<InventoryCategoryNode> childNodes = _categoriesNode.GetNodes<InventoryCategoryNode>().ToList();
+        if (childNodes.Count == 0)
+        {
+            ResizeWindow(MinWindowWidth, MinWindowHeight);
+            return;
+        }
+
+        float requiredWidth = childNodes.Max(node => node. Width);
+        requiredWidth += ContentStartPosition.X * 2;
+        float finalWidth = Math.Clamp(requiredWidth, MinWindowWidth, MaxWindowWidth);
+
+        float contentWidth = finalWidth - (ContentStartPosition.X * 2);
+        _categoriesNode.Size = new Vector2(contentWidth, MaxWindowHeight);
+
+        _categoriesNode.RecalculateLayout();
+
+        float requiredHeight = _categoriesNode.GetRequiredHeight();
+        requiredHeight += ContentStartPosition.Y + ContentStartPosition.X;
+
+        float finalHeight = Math.Clamp(requiredHeight, MinWindowHeight, MaxWindowHeight);
+
+        ResizeWindow(finalWidth, finalHeight);
+    }
+
+    private void ResizeWindow(float width, float height)
+    {
+        SetWindowSize(width, height);
+        _categoriesNode.Size = ContentSize;
+        _categoriesNode.RecalculateLayout();
     }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
         Services.AddonLifecycle.UnregisterListener(OnInventoryUpdate);
+        addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
     }
 }

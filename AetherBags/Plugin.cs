@@ -43,6 +43,7 @@ public class Plugin : IDalamudPlugin
         if (Services.ClientState.IsLoggedIn) {
             Services.Framework.RunOnFrameworkThread(OnLogin);
         }
+        Services.AddonLifecycle.LogAddon("Inventory");
     }
 
     public void Dispose()

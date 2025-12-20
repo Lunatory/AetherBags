@@ -3,6 +3,7 @@ using System.Linq;
 using Dalamud.Game.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using Lumina.Excel.Sheets;
 
 namespace AetherBags.Inventory;
 
@@ -34,6 +35,22 @@ public static unsafe class InventoryState
     public static bool Contains(this List<InventoryType> inventoryTypes, GameInventoryType type)
         => inventoryTypes.Contains((InventoryType)type);
 
+    public static List<CategorizedInventory> GetInventoryItemCategories()
+    {
+        var items = GetInventoryItems();
+
+        return items
+            .GroupBy(GetItemUiCategoryKey)
+            .OrderBy(g => g.Key)
+            .Select(g =>
+            {
+                var category = GetCategoryInfoForKey(g.Key, g.FirstOrDefault());
+                var list = g.OrderByDescending(i => i.ItemCount).ToList();
+                return new CategorizedInventory(category, list);
+            })
+            .ToList();
+    }
+
     public static List<ItemInfo> GetInventoryItems() {
         List<InventoryType> inventories = [ InventoryType.Inventory1, InventoryType.Inventory2, InventoryType.Inventory3, InventoryType.Inventory4 ];
         List<InventoryItem> items = [];
@@ -60,4 +77,35 @@ public static unsafe class InventoryState
 
         return itemInfos;
     }
+
+    public static List<ItemInfo> GetInventoryItems(string filterString, bool invert = false)
+        => GetInventoryItems().Where(item => item.IsRegexMatch(filterString) != invert).ToList();
+
+    private static uint GetItemUiCategoryKey(ItemInfo info)
+        => info.UiCategory.RowId;
+
+    private static CategoryInfo GetCategoryInfoForKey(uint key, ItemInfo? sample)
+    {
+        if (key == 0)
+        {
+            return new CategoryInfo
+            {
+                Name = "Misc",
+                Description = "Uncategorized items",
+            };
+        }
+
+        var uiCat = sample?.UiCategory.Value;
+        var name = uiCat?.Name.ToString();
+        if (string.IsNullOrWhiteSpace(name))
+            name = $"Category\\ {key}";
+
+        return new CategoryInfo
+        {
+            Name = name,
+        };
+    }
+
+
+
 }

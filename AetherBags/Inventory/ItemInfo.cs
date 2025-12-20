@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Text.RegularExpressions;
 using AetherBags.Extensions;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using Lumina.Excel;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Inventory;
@@ -25,7 +26,7 @@ public class ItemInfo : IEquatable<ItemInfo> {
 
     public int Rarity => ItemData.Rarity;
 
-    public int UiCategory => (int) ItemData.ItemUICategory.RowId;
+    public RowRef<ItemUICategory> UiCategory => ItemData.ItemUICategory;
 
     private string Description => ItemData.Description.ToString();
 
