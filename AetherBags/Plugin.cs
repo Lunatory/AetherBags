@@ -1,27 +1,77 @@
+using System.Numerics;
+using AetherBags.Addons;
+using AetherBags.Helpers;
+using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
+using KamiToolKit;
 
 namespace AetherBags;
 
 public class Plugin : IDalamudPlugin
 {
-    public const string CommandName = "/aetherbags";
-
+    private static string HelpDescription => "Opens your inventory.";
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<Services>();
 
-        Services.CommandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
+        BackupHelper.DoConfigBackup(pluginInterface);
+
+        KamiToolKitLibrary.Initialize(pluginInterface);
+
+        System.AddonInventoryWindow = new AddonInventoryWindow
         {
-            HelpMessage = ""
+            InternalName = "AetherBags",
+            Title = "AetherBags",
+            Size = new Vector2(750, 750),
+        };
+
+        Services.CommandManager.AddHandler("/aetherbags", new CommandInfo(OnCommand)
+        {
+            DisplayOrder = 1,
+            ShowInHelp = true,
+            HelpMessage = HelpDescription
         });
+        Services.CommandManager.AddHandler("/ab", new CommandInfo(OnCommand)
+        {
+            DisplayOrder = 2,
+            ShowInHelp = true,
+            HelpMessage = HelpDescription
+        });
+        Services.ClientState.Login += OnLogin;
+
+        if (Services.ClientState.IsLoggedIn) {
+            Services.Framework.RunOnFrameworkThread(OnLogin);
+        }
     }
 
     public void Dispose()
     {
-        Services.CommandManager.RemoveHandler(CommandName);
+        Services.ClientState.Login -= OnLogin;
+
+        Services.CommandManager.RemoveHandler("/aetherbags");
+        Services.CommandManager.RemoveHandler("/ab");
+
+        KamiToolKitLibrary.Dispose();
     }
 
     private void OnCommand(string command, string args)
     {
+        switch (command)
+        {
+            case "/aetherbags":
+            case "/ab":
+                if(args.Length == 0)
+                    System.AddonInventoryWindow.Toggle();
+                if(args == "config")
+                    System.AddonInventoryWindow.Toggle();
+                break;
+        }
     }
+
+    private void OnLogin() {
+        #if DEBUG
+            System.AddonInventoryWindow.Toggle();
+        #endif
+    }
+}

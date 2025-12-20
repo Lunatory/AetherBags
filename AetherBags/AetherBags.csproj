@@ -1,5 +1,24 @@
-<Project Sdk="Dalamud.NET.Sdk/12.0.2">
+<Project Sdk="Dalamud.NET.Sdk/14.0.1">
     <PropertyGroup>
         <Version>1.0.0.0</Version>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <Author>Zeffuro</Author>
+        <Name>AetherBags</Name>
+        <InternalName>AetherBags</InternalName>
+        <Punchline>Never think too hard about your bags again!</Punchline>
+        <Description>This plugin replaces your inventory with it's own categorified inventory addon.</Description>
+        <RepoUrl>https://github.com/Zeffuro/AetherBags</RepoUrl>
+        <Tags>ui</Tags>
+        <AcceptsFeedback>true</AcceptsFeedback>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\KamiToolKit\KamiToolKit.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include=".gitignore" />
+    </ItemGroup>
 </Project>

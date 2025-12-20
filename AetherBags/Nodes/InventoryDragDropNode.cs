@@ -1,0 +1,54 @@
+using System.Numerics;
+using AetherBags.Extensions;
+using AetherBags.Inventory;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
+
+namespace AetherBags.Nodes;
+
+public class InventoryDragDropNode : DragDropNode
+{
+    private readonly TextNode _quantityTextNode;
+    public unsafe InventoryDragDropNode()
+    {
+        _quantityTextNode = new TextNode {
+            Size = new Vector2(40.0f, 12.0f),
+            Position = new Vector2(4.0f, 34.0f),
+            NodeFlags = NodeFlags.Enabled | NodeFlags.EmitsEvents,
+            Color = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(51),
+            TextFlags = TextFlags.Edge,
+            AlignmentType = AlignmentType.Right,
+        };
+        _quantityTextNode.AttachNode(this);
+        CollisionNode.AddEvent(AtkEventType.MouseDown, OnItemMouseDown);
+        CollisionNode.AddEvent(AtkEventType.MouseClick, OnItemClicked);
+    }
+
+    public required ItemInfo ItemInfo
+    {
+        get;
+        set
+        {
+            field = value;
+            _quantityTextNode.String = value.ItemCount.ToString();
+        }
+    }
+
+    private unsafe void OnItemMouseDown(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
+        InventoryItem item = ItemInfo.Item;
+        if (!atkEventData->IsRightClick) return;
+
+        AgentInventoryContext* context = AgentInventoryContext.Instance();
+        context->OpenForItemSlot(item.Container, item.Slot, 0, context->AddonId);
+    }
+
+    private unsafe void OnItemClicked(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
+        InventoryItem item = ItemInfo.Item;
+        if (!atkEventData->IsLeftClick) return;
+        item.UseItem();
+    }
+}
