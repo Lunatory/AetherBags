@@ -22,7 +22,7 @@ public class InventoryCategoryNode : SimpleComponentNode
     private const float HeaderHeight = 16;
     private const float MinWidth = 40;
 
-    private float?  _fixedWidth = null;
+    private float?  _fixedWidth;
 
     public InventoryCategoryNode()
     {
@@ -61,16 +61,24 @@ public class InventoryCategoryNode : SimpleComponentNode
         }
     }
 
-    public void SetItemsPerLine(int itemsPerLine)
+    public int ItemsPerLine
     {
-        _itemGridNode.ItemsPerLine = itemsPerLine;
-        RecalculateSize();
+        get => _itemGridNode.ItemsPerLine;
+        set
+        {
+            _itemGridNode.ItemsPerLine = value;
+            RecalculateSize();
+        }
     }
 
-    public void SetFixedWidth(float width)
+    public float? FixedWidth
     {
-        _fixedWidth = width;
-        RecalculateSize();
+        get => _fixedWidth;
+        set
+        {
+            _fixedWidth = value;
+            RecalculateSize();
+        }
     }
 
     private void RecalculateSize()
@@ -106,10 +114,9 @@ public class InventoryCategoryNode : SimpleComponentNode
         _categoryNameTextNode.Size = _categoryNameTextNode.Size with { X = calculatedWidth };
     }
 
-    private bool UpdateItemGrid()
+    private void UpdateItemGrid()
     {
-        var listUpdated = _itemGridNode.SyncWithListData(CategorizedInventory.Items, node => node.ItemInfo, CreateInventoryDragDropNode);
-        return listUpdated;
+        _itemGridNode.SyncWithListData(CategorizedInventory.Items, node => node.ItemInfo, CreateInventoryDragDropNode);
     }
 
     private InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)

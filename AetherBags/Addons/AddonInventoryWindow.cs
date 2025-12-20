@@ -7,17 +7,18 @@ using AetherBags.Inventory;
 using AetherBags.Nodes;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
+using Lumina.Data.Parsing.Uld;
 
 namespace AetherBags.Addons;
 
 public class AddonInventoryWindow : NativeAddon
 {
-    private WrappingGridNode<InventoryCategoryNode> _categoriesNode;
+    private WrappingGridNode<InventoryCategoryNode> _categoriesNode = null!;
+    private TextInputWithHintNode _searchInputNode = null!;
 
     // Window constraints
     private const float MinWindowWidth = 300;
@@ -26,14 +27,12 @@ public class AddonInventoryWindow : NativeAddon
     private const float MaxWindowHeight = 1000;
 
     // Layout settings
-    private const float CategorySpacing = 10;
+    private const float CategorySpacing = 12;
     private const float ItemSize = 40;
     private const float ItemPadding = 6;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
-        addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
         _categoriesNode = new WrappingGridNode<InventoryCategoryNode>
         {
             Position = ContentStartPosition,
@@ -42,6 +41,20 @@ public class AddonInventoryWindow : NativeAddon
             VerticalSpacing = CategorySpacing
         };
         _categoriesNode.AttachNode(this);
+
+        var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
+
+        Vector2 headerSize = new Vector2(addon->WindowHeaderCollisionNode->Width, addon->WindowHeaderCollisionNode->Height);
+        _searchInputNode = new TextInputWithHintNode {
+            Position = headerSize / 2.0f - size / 2.0f + new Vector2(25.0f, 10.0f),
+            Size = size,
+            OnInputReceived = _ => RefreshCategories(false),
+        };
+
+        _searchInputNode.AttachNode(this);
+
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
+        addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
         RefreshCategories();
     }
@@ -60,9 +73,9 @@ public class AddonInventoryWindow : NativeAddon
         RefreshCategories();
     }
 
-    private void RefreshCategories()
+    private void RefreshCategories(bool autosize = true)
     {
-        var categories = InventoryState.GetInventoryItemCategories();
+        var categories = InventoryState.GetInventoryItemCategories(_searchInputNode.SearchString.ExtractText());
 
         float maxContentWidth = MaxWindowWidth - (ContentStartPosition.X * 2);
         int maxItemsPerLine = CalculateOptimalItemsPerLine(maxContentWidth);
@@ -70,39 +83,24 @@ public class AddonInventoryWindow : NativeAddon
         _categoriesNode.SyncWithListData(
             categories,
             node => node.CategorizedInventory,
-            data =>
+            data => new InventoryCategoryNode
             {
-                var node = new InventoryCategoryNode
-                {
-                    Size = ContentSize with { Y = 120 },
-                    CategorizedInventory = data
-                };
-
-                UpdateItemsPerLine(node, maxItemsPerLine);
-                return node;
+                Size = ContentSize with { Y = 120 },
+                CategorizedInventory = data,
+                ItemsPerLine = Math.Min(data.Items.Count, maxItemsPerLine)
             });
 
         foreach (InventoryCategoryNode node in _categoriesNode.GetNodes<InventoryCategoryNode>())
         {
-            UpdateItemsPerLine(node, maxItemsPerLine);
+            node.ItemsPerLine = Math.Min(node.CategorizedInventory.Items.Count, maxItemsPerLine);
         }
 
-        AutoSizeWindow();
-    }
-
-    private static void UpdateItemsPerLine(InventoryCategoryNode node, int maxItemsPerLine)
-    {
-        int itemCount = node.CategorizedInventory.Items.Count;
-        int itemsPerLine = Math.Min(itemCount, maxItemsPerLine);
-        node.SetItemsPerLine(itemsPerLine);
+        if(autosize) AutoSizeWindow();
     }
 
     private int CalculateOptimalItemsPerLine(float availableWidth)
     {
-        float itemWithPadding = ItemSize + ItemPadding;
-        int maxItems = (int)Math.Floor((availableWidth + ItemPadding) / itemWithPadding);
-
-        return Math.Clamp(maxItems, 1, 15);
+        return Math.Clamp((int)Math.Floor((availableWidth + ItemPadding) / (ItemSize + ItemPadding)), 1, 15);
     }
 
     private void AutoSizeWindow()

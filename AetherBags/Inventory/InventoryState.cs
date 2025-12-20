@@ -35,9 +35,11 @@ public static unsafe class InventoryState
     public static bool Contains(this List<InventoryType> inventoryTypes, GameInventoryType type)
         => inventoryTypes.Contains((InventoryType)type);
 
-    public static List<CategorizedInventory> GetInventoryItemCategories()
+    public static List<CategorizedInventory> GetInventoryItemCategories(string filterString = "", bool invert = false)
     {
-        var items = GetInventoryItems();
+        var items = string.IsNullOrEmpty(filterString)
+            ? GetInventoryItems()
+            : GetInventoryItems(filterString, invert);
 
         return items
             .GroupBy(GetItemUiCategoryKey)

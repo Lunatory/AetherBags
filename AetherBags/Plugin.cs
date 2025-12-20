@@ -1,7 +1,6 @@
 using System.Numerics;
 using AetherBags.Addons;
 using AetherBags.Helpers;
-using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
 using KamiToolKit;
@@ -43,7 +42,6 @@ public class Plugin : IDalamudPlugin
         if (Services.ClientState.IsLoggedIn) {
             Services.Framework.RunOnFrameworkThread(OnLogin);
         }
-        Services.AddonLifecycle.LogAddon("Inventory");
     }
 
     public void Dispose()
