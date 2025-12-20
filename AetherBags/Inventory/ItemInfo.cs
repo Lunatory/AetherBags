@@ -1,61 +1,87 @@
-using System;
-using System.Numerics;
-using System.Text.RegularExpressions;
 using AetherBags.Extensions;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using System;
+using System.Numerics;
+using System.Text.RegularExpressions;
 
 namespace AetherBags.Inventory;
 
-public class ItemInfo : IEquatable<ItemInfo> {
+public sealed class ItemInfo : IEquatable<ItemInfo>
+{
     public required InventoryItem Item { get; set; }
     public required int ItemCount { get; set; }
 
-    private Item ItemData => Services.DataManager.GetExcelSheet<Item>().GetRow(Item.ItemId);
+    private static ExcelSheet<Item>? s_itemSheet;
+    private static ExcelSheet<Item> ItemSheet => s_itemSheet ??= Services.DataManager.GetExcelSheet<Item>();
 
-    public Vector4 RarityColor => ItemData.RarityColor;
+    private bool _rowLoaded;
+    private Item _row;
 
-    public uint IconId => ItemData.Icon;
+    private string? _name;
+    private string? _description;
 
-    public string Name => ItemData.Name.ToString();
+    private ref readonly Item Row
+    {
+        get
+        {
+            if (!_rowLoaded)
+            {
+                _row = ItemSheet.GetRow(Item.ItemId);
+                _rowLoaded = true;
+            }
+            return ref _row;
+        }
+    }
 
-    public int Level => ItemData.LevelEquip;
+    public Vector4 RarityColor => Row.RarityColor;
+    public uint IconId => Row.Icon;
 
-    public int ItemLevel => (int) ItemData.LevelItem.RowId;
+    public string Name => _name ??= Row.Name.ToString();
 
-    public int Rarity => ItemData.Rarity;
+    public int Level => Row.LevelEquip;
+    public int ItemLevel => (int)Row.LevelItem.RowId;
+    public int Rarity => Row.Rarity;
 
-    public RowRef<ItemUICategory> UiCategory => ItemData.ItemUICategory;
+    public RowRef<ItemUICategory> UiCategory => Row.ItemUICategory;
 
-    private string Description => ItemData.Description.ToString();
+    private string Description => _description ??= Row.Description.ToString();
 
-    public bool IsRegexMatch(string searchTerms) {
-        const RegexOptions regexOptions = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
+    public bool IsRegexMatch(string searchTerms)
+    {
+        if (string.IsNullOrEmpty(searchTerms))
+            return true;
 
-        if (Regex.IsMatch(Name, searchTerms, regexOptions)) return true;
-        if (Regex.IsMatch(Description, searchTerms, regexOptions)) return true;
-        if (Regex.IsMatch(Level.ToString(), searchTerms, regexOptions)) return true;
-        if (Regex.IsMatch(ItemLevel.ToString(), searchTerms, regexOptions)) return true;
+        var re = new Regex(searchTerms, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+        if (re.IsMatch(Name)) return true;
+
+        if (re.IsMatch(Description)) return true;
+
+        if (re.IsMatch(Level.ToString())) return true;
+        if (re.IsMatch(ItemLevel.ToString())) return true;
 
         return false;
     }
 
-    public bool Equals(ItemInfo? other) {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return Item.ItemId.Equals(other.Item.ItemId) && ItemCount == other.ItemCount;
+    public bool IsRegexMatch(Regex re)
+    {
+        if (re.IsMatch(Name)) return true;
+        if (re.IsMatch(Description)) return true;
+
+        if (re.IsMatch(Level.ToString())) return true;
+        if (re.IsMatch(ItemLevel.ToString())) return true;
+
+        return false;
     }
 
-    public override bool Equals(object? obj) {
-        if (obj is null) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != GetType()) return false;
-        return Equals((ItemInfo) obj);
-    }
+    public bool Equals(ItemInfo? other)
+        => other is not null && Item.ItemId == other.Item.ItemId && ItemCount == other.ItemCount;
+
+    public override bool Equals(object? obj)
+        => obj is ItemInfo other && Equals(other);
 
     public override int GetHashCode()
-        // ReSharper disable NonReadonlyMemberInGetHashCode
         => HashCode.Combine(Item.ItemId, ItemCount);
-        // ReSharper restore NonReadonlyMemberInGetHashCode
 }
