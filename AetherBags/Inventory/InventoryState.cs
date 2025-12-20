@@ -1,16 +1,18 @@
-using System.Collections.Generic;
-using System.Linq;
 using AetherBags.Currency;
 using Dalamud.Game.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.Sheets;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace AetherBags.Inventory;
 
 public static unsafe class InventoryState
 {
-    public static List<InventoryType> StandardInventories => [
+    public static readonly InventoryType[] StandardInventories =
+    [
         InventoryType.Inventory1,
         InventoryType.Inventory2,
         InventoryType.Inventory3,
@@ -33,61 +35,151 @@ public static unsafe class InventoryState
         InventoryType.ArmorySoulCrystal,
     ];
 
-    public static bool Contains(this List<InventoryType> inventoryTypes, GameInventoryType type)
+    private static readonly InventoryType[] BagInventories =
+    [
+        InventoryType.Inventory1,
+        InventoryType.Inventory2,
+        InventoryType.Inventory3,
+        InventoryType.Inventory4,
+    ];
+
+    public static bool Contains(this IReadOnlyCollection<InventoryType> inventoryTypes, GameInventoryType type)
         => inventoryTypes.Contains((InventoryType)type);
+
+    private static readonly Dictionary<uint, CategoryInfo> CategoryInfoCache = new(capacity: 256);
 
     public static List<CategorizedInventory> GetInventoryItemCategories(string filterString = "", bool invert = false)
     {
-        var items = string.IsNullOrEmpty(filterString)
+        List<ItemInfo> items = string.IsNullOrEmpty(filterString)
             ? GetInventoryItems()
             : GetInventoryItems(filterString, invert);
 
-        return items
-            .GroupBy(GetItemUiCategoryKey)
-            .OrderBy(g => g.Key)
-            .Select(g =>
+        if (items.Count == 0)
+            return new List<CategorizedInventory>(0);
+
+        var buckets = new Dictionary<uint, CategoryBucket>(capacity: Math.Min(128, items.Count));
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemInfo info = items[i];
+            uint catKey = info.UiCategory.RowId;
+
+            if (!buckets.TryGetValue(catKey, out CategoryBucket? bucket))
             {
-                var category = GetCategoryInfoForKey(g.Key, g.FirstOrDefault());
-                var list = g.OrderByDescending(i => i.ItemCount).ToList();
-                return new CategorizedInventory(category, list);
-            })
-            .ToList();
+                bucket = new CategoryBucket
+                {
+                    Key = catKey,
+                    Category = GetCategoryInfoForKeyCached(catKey, info),
+                    Items = new List<ItemInfo>(capacity: 16),
+                };
+                buckets.Add(catKey, bucket);
+            }
+
+            bucket.Items.Add(info);
+        }
+
+        uint[] keys = new uint[buckets.Count];
+        int k = 0;
+        foreach (var key in buckets.Keys)
+            keys[k++] = key;
+        Array.Sort(keys);
+
+        var result = new List<CategorizedInventory>(keys.Length);
+        for (int i = 0; i < keys.Length; i++)
+        {
+            CategoryBucket bucket = buckets[keys[i]];
+            bucket.Items.Sort(ItemCountDescComparer.Instance);
+            result.Add(new CategorizedInventory(bucket.Category, bucket.Items));
+        }
+
+        return result;
     }
 
-    public static List<ItemInfo> GetInventoryItems() {
-        List<InventoryType> inventories = [ InventoryType.Inventory1, InventoryType.Inventory2, InventoryType.Inventory3, InventoryType.Inventory4 ];
-        List<InventoryItem> items = [];
+    public static List<ItemInfo> GetInventoryItems()
+    {
+        var dict = new Dictionary<uint, AggregatedItem>(capacity: 128);
 
-        foreach (var inventory in inventories) {
-            var container = InventoryManager.Instance()->GetInventoryContainer(inventory);
+        InventoryManager* mgr = InventoryManager.Instance();
+        if (mgr == null)
+            return new List<ItemInfo>(0);
 
-            for (var index = 0; index < container->Size; ++index) {
-                ref var item = ref container->Items[index];
-                if (item.ItemId is 0) continue;
+        for (int invIndex = 0; invIndex < BagInventories.Length; invIndex++)
+        {
+            var container = mgr->GetInventoryContainer(BagInventories[invIndex]);
+            if (container == null)
+                continue;
 
-                items.Add(item);
+            int size = container->Size;
+            for (int slot = 0; slot < size; slot++)
+            {
+                ref var item = ref container->Items[slot];
+                uint id = item.ItemId;
+                if (id == 0)
+                    continue;
+
+                int qty = item.Quantity;
+
+                if (dict.TryGetValue(id, out AggregatedItem agg))
+                {
+                    agg.Total += qty;
+                    dict[id] = agg;
+                }
+                else
+                {
+                    dict.Add(id, new AggregatedItem { First = item, Total = qty });
+                }
             }
         }
 
-        List<ItemInfo> itemInfos = [];
-        itemInfos.AddRange(from itemGroups in items.GroupBy(item => item.ItemId)
-            where itemGroups.Key is not 0
-            let item = itemGroups.First()
-            let itemCount = itemGroups.Sum(duplicateItem => duplicateItem.Quantity)
-            select new ItemInfo {
-                Item = item, ItemCount = itemCount,
-            });
+        if (dict.Count == 0)
+            return new List<ItemInfo>(0);
 
-        return itemInfos;
+        var list = new List<ItemInfo>(dict.Count);
+        foreach (var kvp in dict)
+        {
+            AggregatedItem agg = kvp.Value;
+
+            list.Add(new ItemInfo
+            {
+                Item = agg.First,
+                ItemCount = agg.Total,
+            });
+        }
+
+        return list;
     }
 
     public static List<ItemInfo> GetInventoryItems(string filterString, bool invert = false)
-        => GetInventoryItems().Where(item => item.IsRegexMatch(filterString) != invert).ToList();
+    {
+        List<ItemInfo> all = GetInventoryItems();
+        if (all.Count == 0)
+            return all;
 
-    private static uint GetItemUiCategoryKey(ItemInfo info)
-        => info.UiCategory.RowId;
+        var filtered = new List<ItemInfo>(all.Count);
+        var re = new Regex(filterString, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        for (int i = 0; i < all.Count; i++)
+        {
+            ItemInfo info = all[i];
 
-    private static CategoryInfo GetCategoryInfoForKey(uint key, ItemInfo? sample)
+            bool isMatch = info.IsRegexMatch(re);
+            if (isMatch != invert)
+                filtered.Add(info);
+        }
+
+        return filtered;
+    }
+
+    private static CategoryInfo GetCategoryInfoForKeyCached(uint key, ItemInfo sample)
+    {
+        if (CategoryInfoCache.TryGetValue(key, out var cached))
+            return cached;
+
+        CategoryInfo info = GetCategoryInfoForKeySlow(key, sample);
+        CategoryInfoCache[key] = info;
+        return info;
+    }
+
+    private static CategoryInfo GetCategoryInfoForKeySlow(uint key, ItemInfo sample)
     {
         if (key == 0)
         {
@@ -98,8 +190,9 @@ public static unsafe class InventoryState
             };
         }
 
-        var uiCat = sample?.UiCategory.Value;
-        var name = uiCat?.Name.ToString();
+        var uiCat = sample.UiCategory.Value;
+        string? name = uiCat.Name.ToString();
+
         if (string.IsNullOrWhiteSpace(name))
             name = $"Category\\ {key}";
 
@@ -123,5 +216,30 @@ public static unsafe class InventoryState
             ItemId = itemId,
             IconId = Services.DataManager.GetExcelSheet<Item>().GetRow(itemId).Icon
         };
+    }
+
+    private struct AggregatedItem
+    {
+        public InventoryItem First;
+        public int Total;
+    }
+
+    private sealed class ItemCountDescComparer : IComparer<ItemInfo>
+    {
+        public static readonly ItemCountDescComparer Instance = new();
+
+        public int Compare(ItemInfo x, ItemInfo y)
+        {
+            if (x.ItemCount > y.ItemCount) return -1;
+            if (x.ItemCount < y.ItemCount) return 1;
+            return 0;
+        }
+    }
+
+    private sealed class CategoryBucket
+    {
+        public uint Key;
+        public CategoryInfo Category = null!;
+        public List<ItemInfo> Items = null!;
     }
 }

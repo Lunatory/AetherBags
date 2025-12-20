@@ -25,6 +25,13 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
 
     private readonly IReadOnlyList<IReadOnlyList<NodeBase>> _rowsView;
 
+    private float _lastAvailableWidth = float.NaN;
+    private float _lastStartX = float.NaN;
+    private float _lastHSpace = float.NaN;
+    private float _lastVSpace = float.NaN;
+    private float _lastTopPadding = float.NaN;
+    private float _lastBottomPadding = float.NaN;
+
     public WrappingGridNode()
     {
         _rowsView = new RowsReadOnlyView(_rows);
@@ -37,17 +44,254 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
 
     protected override void InternalRecalculateLayout()
     {
-        RecycleAllRows();
-        _rowIndex.Clear();
-
         int count = NodeList.Count;
         if (count == 0)
         {
+            RecycleAllRows();
+            _rowIndex.Clear();
             _requiredHeight = 0f;
             _requiredHeightDirty = false;
+            RememberLayoutParams();
             return;
         }
 
+        if (_rows.Count != 0 && TryUpdateLayoutWithoutReflowOrTailReflow(count))
+        {
+            _requiredHeightDirty = true;
+            RememberLayoutParams();
+            return;
+        }
+
+        FullReflow(count);
+        _requiredHeightDirty = true;
+        RememberLayoutParams();
+    }
+
+    private bool TryUpdateLayoutWithoutReflowOrTailReflow(int count)
+    {
+        if (!LayoutParamsMatchLast())
+            return false;
+
+        int mismatchRow = FindFirstMismatchRow(count, out int mismatchNodeIndex);
+
+        if (mismatchRow < 0)
+        {
+            RepositionExistingRows();
+            return true;
+        }
+
+        TailReflowFrom(mismatchRow, mismatchNodeIndex, count);
+        return true;
+    }
+
+    private int FindFirstMismatchRow(int count, out int mismatchNodeIndex)
+    {
+        float availableWidth = Width;
+        float hSpace = HorizontalSpacing;
+        float startX = FirstItemSpacing;
+
+        int rowIdx = 0;
+        int nodeIdx = 0;
+
+        while (nodeIdx < count)
+        {
+            if (rowIdx >= _rows.Count)
+            {
+                mismatchNodeIndex = nodeIdx;
+                return rowIdx;
+            }
+
+            List<NodeBase> existingRow = _rows[rowIdx];
+            int existingRowCount = existingRow.Count;
+
+            if (existingRowCount == 0)
+            {
+                mismatchNodeIndex = nodeIdx;
+                return rowIdx;
+            }
+
+            int predictedCount = 0;
+            float currentX = startX;
+
+            while (nodeIdx + predictedCount < count)
+            {
+                NodeBase node = NodeList[nodeIdx + predictedCount];
+                float w = node.Width;
+
+                if (predictedCount != 0 && (currentX + w) > availableWidth)
+                    break;
+
+                predictedCount++;
+                currentX += w + hSpace;
+            }
+
+            if (predictedCount != existingRowCount)
+            {
+                mismatchNodeIndex = nodeIdx;
+                return rowIdx;
+            }
+
+            for (int j = 0; j < existingRowCount; j++)
+            {
+                if (!ReferenceEquals(existingRow[j], NodeList[nodeIdx + j]))
+                {
+                    mismatchNodeIndex = nodeIdx;
+                    return rowIdx;
+                }
+            }
+
+            nodeIdx += existingRowCount;
+            rowIdx++;
+        }
+
+        if (rowIdx < _rows.Count)
+        {
+            mismatchNodeIndex = nodeIdx;
+            return rowIdx;
+        }
+
+        mismatchNodeIndex = -1;
+        return -1;
+    }
+
+    private void RepositionExistingRows()
+    {
+        _rowIndex.Clear();
+        _rowIndex.EnsureCapacity(NodeList.Count);
+
+        float hSpace = HorizontalSpacing;
+        float vSpace = VerticalSpacing;
+        float startX = FirstItemSpacing;
+
+        float y = TopPadding;
+
+        for (int rowIdx = 0; rowIdx < _rows.Count; rowIdx++)
+        {
+            List<NodeBase> row = _rows[rowIdx];
+            float x = startX;
+            float rowHeight = 0f;
+
+            for (int j = 0; j < row.Count; j++)
+            {
+                NodeBase node = row[j];
+
+                node.X = x;
+                node.Y = y;
+
+                AdjustNode(node);
+
+                float h = node.Height;
+                if (h > rowHeight) rowHeight = h;
+
+                _rowIndex[node] = rowIdx;
+
+                x += node.Width + hSpace;
+            }
+
+            y += rowHeight + vSpace;
+        }
+    }
+
+    private void TailReflowFrom(int startRowIndex, int startNodeIndex, int count)
+    {
+        _rowIndex.Clear();
+        _rowIndex.EnsureCapacity(count);
+
+        float availableWidth = Width;
+        float hSpace = HorizontalSpacing;
+        float vSpace = VerticalSpacing;
+        float startX = FirstItemSpacing;
+
+        float y = TopPadding;
+
+        if ((uint)startRowIndex > (uint)_rows.Count)
+            startRowIndex = _rows.Count;
+
+        for (int rowIdx = 0; rowIdx < startRowIndex; rowIdx++)
+        {
+            List<NodeBase> row = _rows[rowIdx];
+            float x = startX;
+            float rowHeight = 0f;
+
+            for (int j = 0; j < row.Count; j++)
+            {
+                NodeBase node = row[j];
+
+                node.X = x;
+                node.Y = y;
+
+                AdjustNode(node);
+
+                float h = node.Height;
+                if (h > rowHeight) rowHeight = h;
+
+                _rowIndex[node] = rowIdx;
+
+                x += node.Width + hSpace;
+            }
+
+            y += rowHeight + vSpace;
+        }
+
+        for (int i = _rows.Count - 1; i >= startRowIndex; i--)
+        {
+            List<NodeBase> row = _rows[i];
+            row.Clear();
+            _rowPool.Push(row);
+            _rows.RemoveAt(i);
+        }
+
+        int currentRowIndex = startRowIndex;
+        float xCursor = startX;
+        float rowHeightTail = 0f;
+
+        List<NodeBase> currentRow = RentRowList(capacityHint: 8);
+
+        for (int i = startNodeIndex; i < count; i++)
+        {
+            NodeBase node = NodeList[i];
+            float w = node.Width;
+
+            if (currentRow.Count != 0 && (xCursor + w) > availableWidth)
+            {
+                _rows.Add(currentRow);
+                currentRowIndex++;
+
+                y += rowHeightTail + vSpace;
+                xCursor = startX;
+                rowHeightTail = 0f;
+
+                currentRow = RentRowList(capacityHint: 8);
+            }
+
+            node.X = xCursor;
+            node.Y = y;
+
+            AdjustNode(node);
+
+            float h = node.Height;
+            if (h > rowHeightTail) rowHeightTail = h;
+
+            currentRow.Add(node);
+            _rowIndex[node] = currentRowIndex;
+
+            xCursor += w + hSpace;
+        }
+
+        if (currentRow.Count != 0)
+        {
+            _rows.Add(currentRow);
+        }
+        else
+        {
+            RecycleRow(currentRow);
+        }
+    }
+
+    private void FullReflow(int count)
+    {
+        RecycleAllRows();
+        _rowIndex.Clear();
         _rowIndex.EnsureCapacity(count);
 
         float availableWidth = Width;
@@ -65,7 +309,6 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         for (int i = 0; i < count; i++)
         {
             NodeBase node = NodeList[i];
-
             float nodeWidth = node.Width;
 
             if (currentRow.Count != 0 && (currentX + nodeWidth) > availableWidth)
@@ -102,8 +345,6 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         {
             RecycleRow(currentRow);
         }
-
-        _requiredHeightDirty = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -120,7 +361,6 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
             float bottom = node.Y + node.Height;
             if (bottom > maxBottom) maxBottom = bottom;
         }
-
 
         maxBottom += BottomPadding;
 
@@ -160,6 +400,27 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         _rowPool.Push(row);
     }
 
+    private bool LayoutParamsMatchLast()
+    {
+        return
+            _lastAvailableWidth == Width &&
+            _lastStartX == FirstItemSpacing &&
+            _lastHSpace == HorizontalSpacing &&
+            _lastVSpace == VerticalSpacing &&
+            _lastTopPadding == TopPadding &&
+            _lastBottomPadding == BottomPadding;
+    }
+
+    private void RememberLayoutParams()
+    {
+        _lastAvailableWidth = Width;
+        _lastStartX = FirstItemSpacing;
+        _lastHSpace = HorizontalSpacing;
+        _lastVSpace = VerticalSpacing;
+        _lastTopPadding = TopPadding;
+        _lastBottomPadding = BottomPadding;
+    }
+
     private sealed class RowsReadOnlyView : IReadOnlyList<IReadOnlyList<NodeBase>>
     {
         private readonly List<List<NodeBase>> _rows;
@@ -174,10 +435,7 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
                 yield return _rows[i];
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     private sealed class ReferenceEqualityComparer<TRef> : IEqualityComparer<TRef> where TRef : class
