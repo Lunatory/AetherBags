@@ -9,39 +9,45 @@ namespace AetherBags.Nodes;
 
 public class CurrencyNode : SimpleComponentNode
 {
-    private IconImageNode iconImageNode;
-    private TextNode countNode;
+    private readonly IconImageNode _iconImageNode;
+    private readonly TextNode _countNode;
 
     public CurrencyNode()
     {
-        iconImageNode = new IconImageNode
+        _iconImageNode = new IconImageNode
         {
-            FitTexture = true
+            FitTexture = true,
+            Size = new Vector2(24f)
         };
-        iconImageNode.AttachNode(this);
+        _iconImageNode.AttachNode(this);
 
-
-        countNode = new TextNode
+        _countNode = new TextNode
         {
             TextFlags = TextFlags.Emboss,
             TextColor = ColorHelper.GetColor(8),
             TextOutlineColor = ColorHelper.GetColor(7),
+            AlignmentType = AlignmentType.Left,
             FontSize = 14,
+            Size = new Vector2(120.0f, 28.0f)
         };
-        countNode.AttachNode(this);
+        _countNode.AttachNode(this);
     }
 
     public required CurrencyInfo Currency {
         get;
         set {
             field = value;
-            iconImageNode.IconId = value.IconId;
-            countNode.String = value.Amount.ToString("N0");
+            _iconImageNode.IconId = value.IconId;
+            _iconImageNode.Position = new Vector2(0f, 2f);
 
-            countNode.Size = new Vector2(120.0f, 28.0f);
-            countNode.Origin = countNode.Size / 2.0f;
-            countNode.Position = new Vector2(26.0f, 0.0f);
-            iconImageNode.Size = new Vector2(24f);
+            _countNode.String = value.Amount.ToString("N0");
+            _countNode.Position = new Vector2(_iconImageNode.Bounds.Right + 2f, 0f);
+
+            // Limit > Capped > Normal
+            _countNode.TextColor =
+                value.LimitReached ? ColorHelper.GetColor(17) :
+                value.IsCapped ? ColorHelper.GetColor(43) :
+                ColorHelper.GetColor(8);
         }
     }
 }

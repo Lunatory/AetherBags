@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Currency;
 using AetherBags.Inventory;
@@ -12,7 +14,7 @@ namespace AetherBags.Nodes;
 public sealed class InventoryFooterNode : SimpleComponentNode
 {
     private readonly TextNode _slotAmountTextNode;
-    private readonly CurrencyNode _currencyNode;
+    private readonly CurrencyListNode _currencyListNode;
 
     public InventoryFooterNode()
     {
@@ -28,12 +30,32 @@ public sealed class InventoryFooterNode : SimpleComponentNode
         };
         _slotAmountTextNode.AttachNode(this);
 
-        _currencyNode = new CurrencyNode
+        _currencyListNode = new CurrencyListNode
         {
+            Position = new Vector2(0, 0),
             Size = new Vector2(120, 28),
-            Currency = InventoryState.GetCurrencyInfo(1)
         };
-        _currencyNode.AttachNode(this);
+        _currencyListNode.AttachNode(this);
+
+        RefreshCurrencies();
+    }
+
+    public void RefreshCurrencies()
+    {
+        IReadOnlyList<CurrencyInfo> currencyInfoList = InventoryState.GetCurrencyInfoList([1, 28, 0xFFFF_FFFE, 0xFFFF_FFFD]);
+        _currencyListNode.SyncWithListDataByKey<CurrencyInfo, CurrencyNode, uint>(
+            dataList: currencyInfoList,
+            getKeyFromData: c => c.ItemId,
+            getKeyFromNode: n => n.Currency.ItemId,
+            updateNode: (node, data) =>
+            {
+                node.Currency = data;
+            },
+            createNodeMethod: data => new CurrencyNode
+            {
+                Size = new Vector2(120, 28),
+                Currency = data
+            });
     }
 
     public string SlotAmountText
@@ -46,6 +68,5 @@ public sealed class InventoryFooterNode : SimpleComponentNode
         base.OnSizeChanged();
 
         _slotAmountTextNode.Position = new Vector2(Size.X - _slotAmountTextNode.Size.X - 10, 0);
-        _currencyNode.Position = new Vector2(0, 0);
     }
 }

@@ -250,13 +250,81 @@ public static unsafe class InventoryState
         return $"{used}/140";
     }
 
-    public static CurrencyInfo GetCurrencyInfo(uint itemId)
+    private const uint CurrencyIdLimitedTomestone = 0xFFFF_FFFE;
+    private const uint CurrencyIdNonLimitedTomestone = 0xFFFF_FFFD;
+
+    private static uint? GetLimitedTomestoneItemId()
+        => Services.DataManager.GetExcelSheet<TomestonesItem>()
+            .FirstOrDefault(t => t.Tomestones.RowId == 3)
+            .Item.RowId;
+
+    private static uint? GetNonLimitedTomestoneItemId()
+        => Services.DataManager.GetExcelSheet<TomestonesItem>()
+            .FirstOrDefault(t => t.Tomestones.RowId == 2)
+            .Item.RowId;
+
+    private static CurrencyItem ResolveCurrencyItemId(uint currencyId)
     {
+        uint itemId = currencyId;
+        bool isLimited = false;
+
+        if (currencyId == CurrencyIdLimitedTomestone)
+        {
+            itemId = GetLimitedTomestoneItemId() ?? 0;
+            isLimited = true;
+        }
+
+        if (currencyId == CurrencyIdNonLimitedTomestone)
+        {
+            itemId = GetNonLimitedTomestoneItemId() ?? 0;
+        }
+
+        return new CurrencyItem(itemId, isLimited);
+    }
+
+
+    public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(uint[] currencyIds)
+    {
+        if (currencyIds.Length == 0) return Array.Empty<CurrencyInfo>();
+
+        List<CurrencyInfo> currencyInfoList = new List<CurrencyInfo>(currencyIds.Length);
+
+        for (int i = 0; i < currencyIds.Length; i++)
+        {
+            CurrencyItem currencyItem = ResolveCurrencyItemId(currencyIds[i]);
+            if (currencyItem.ItemId == 0)
+                continue;
+
+            currencyInfoList.Add(GetCurrencyInfo(currencyItem));
+        }
+
+        return currencyInfoList;
+    }
+
+    private static CurrencyInfo GetCurrencyInfo(CurrencyItem currencyItem)
+    {
+        InventoryManager* inventoryManager = InventoryManager.Instance();
+        var item = Services.DataManager.GetExcelSheet<Item>().GetRow(currencyItem.ItemId);
+
+        uint amount = (uint) inventoryManager->GetInventoryItemCount(currencyItem.ItemId);
+        uint maxAmount = item.StackSize;
+        bool isCapped = false;
+        if (currencyItem.IsLimited)
+        {
+            int weeklyLimit = InventoryManager.GetLimitedTomestoneWeeklyLimit();
+            int weeklyAcquired = inventoryManager->GetWeeklyAcquiredTomestoneCount();
+            isCapped = weeklyAcquired >= weeklyLimit;
+        }
+
+        Services.Logger.Info($"Currency {currencyItem.ItemId} amount: {amount}, max: {maxAmount}");
         return new CurrencyInfo
         {
-            Amount = InventoryManager.Instance()->GetInventoryItemCount(1),
-            ItemId = itemId,
-            IconId = Services.DataManager.GetExcelSheet<Item>().GetRow(itemId).Icon
+            Amount = amount,
+            MaxAmount = item.StackSize,
+            ItemId = currencyItem.ItemId,
+            IconId = item.Icon,
+            LimitReached = amount >= maxAmount,
+            IsCapped = isCapped
         };
     }
 
@@ -339,4 +407,6 @@ public static unsafe class InventoryState
         public List<ItemInfo> FilteredItems = null!;
         public bool Used;
     }
+
+    private record CurrencyItem(uint ItemId, bool IsLimited);
 }
