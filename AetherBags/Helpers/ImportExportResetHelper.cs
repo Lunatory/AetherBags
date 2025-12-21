@@ -1,5 +1,6 @@
 using System.Linq;
 using AetherBags.Configuration;
+using AetherBags.Helpers.Import;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.ImGuiNotification;
@@ -61,5 +62,36 @@ public abstract class ImportExportResetHelper {
             new Notification { Content = "Configuration reset to default.", Type = NotificationType.Success }
         );
         Services.Logger.Info("Configuration reset to default.");
+    }
+
+    public static void TryImportSortaKindaFromClipboard(bool replaceExisting)
+    {
+        //if (!Services.KeyState[VirtualKey.SHIFT])
+        //    return;
+
+        var notification = new Notification { Content = "SortaKinda categories imported.", Type = NotificationType.Success };
+
+        if (!SortaKindaImportExport.TryImportFromClipboard(System.Config, replaceExisting, out var error))
+        {
+            notification.Content = error;
+            notification.Type = NotificationType.Error;
+            Services.Logger.Warning(error);
+        }
+        else
+        {
+            Util.SaveConfig(System.Config);
+            Services.Logger.Info("SortaKinda categories imported from clipboard.");
+        }
+
+        Services.NotificationManager.AddNotification(notification);
+    }
+
+    public static void TryExportSortaKindaToClipboard()
+    {
+        SortaKindaImportExport.ExportToClipboard(System.Config);
+        Services.NotificationManager.AddNotification(
+            new Notification { Content = "SortaKinda JSON exported to clipboard.", Type = NotificationType.Success }
+        );
+        Services.Logger.Info("SortaKinda JSON exported to clipboard.");
     }
 }

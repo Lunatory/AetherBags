@@ -53,24 +53,30 @@ public static class Util
         }
     }
 
-    public static string SerializeConfig(SystemConfiguration config)
+    public static string SerializeCompressed<T>(T value, JsonSerializerOptions? options = null)
     {
-        var json = JsonSerializer.Serialize(config, ConfigJsonOptions);
+        var json = JsonSerializer.Serialize(value, options ?? ConfigJsonOptions);
         return CompressToBase64(json);
     }
 
-    public static SystemConfiguration? DeserializeConfig(string input)
+    public static T? DeserializeCompressed<T>(string input, JsonSerializerOptions? options = null)
     {
         try
         {
             var json = DecompressFromBase64(input);
-            return JsonSerializer.Deserialize<SystemConfiguration>(json, ConfigJsonOptions);
+            return JsonSerializer.Deserialize<T>(json, options ?? ConfigJsonOptions);
         }
         catch
         {
-            return null;
+            return default;
         }
     }
+
+    public static string SerializeConfig(SystemConfiguration config)
+        => SerializeCompressed(config, ConfigJsonOptions);
+
+    public static SystemConfiguration? DeserializeConfig(string input)
+        => DeserializeCompressed<SystemConfiguration>(input, ConfigJsonOptions);
 
     public static void SaveConfig(SystemConfiguration config)
     {

@@ -73,6 +73,12 @@ public class Plugin : IDalamudPlugin
                     System.AddonInventoryWindow.Toggle();
                 if(args == "config")
                     System.AddonInventoryWindow.Toggle();
+                if (args == "import-sk")
+                {
+                    // Manually import from SortaKinda for testing until we have a proper config window
+                    ImportExportResetHelper.TryImportSortaKindaFromClipboard(true);
+                    System.AddonInventoryWindow.ManualRefresh();
+                }
                 break;
         }
     }

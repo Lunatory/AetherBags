@@ -106,6 +106,12 @@ public class AddonInventoryWindow : NativeAddon
         base.OnUpdate(addon);
     }
 
+    public void ManualRefresh()
+    {
+        InventoryState.RefreshFromGame();
+        RefreshCategoriesCore(true);
+    }
+
     private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
     {
         InventoryState.RefreshFromGame();
