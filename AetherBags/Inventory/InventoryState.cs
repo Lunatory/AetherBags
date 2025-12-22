@@ -60,11 +60,16 @@ public static unsafe class InventoryState
 
     private const uint UserCategoryKeyFlag = 0x8000_0000;
 
+    private const ulong AggregatedKeyTag = 1UL << 63;
+
     private static uint MakeUserCategoryKey(int order)
         => UserCategoryKeyFlag | (uint)(order & 0x7FFF_FFFF);
 
     private static bool IsUserCategoryKey(uint key)
         => (key & UserCategoryKeyFlag) != 0;
+
+    private static ulong MakeAggregatedItemKey(uint itemId, bool isHighQuality)
+        => AggregatedKeyTag | ((ulong)itemId << 1) | (isHighQuality ? 1UL : 0UL);
 
     public static bool Contains(this IReadOnlyCollection<InventoryType> inventoryTypes, GameInventoryType type)
         => inventoryTypes.Contains((InventoryType)type);
@@ -128,9 +133,10 @@ public static unsafe class InventoryState
                 nonEmptySlots++;
 
                 int quantity = item.Quantity;
+                bool isHq = (item.Flags & InventoryItem.ItemFlags.HighQuality) != 0;
 
                 ulong key = stackMode == InventoryStackMode.AggregateByItemId
-                    ? id
+                    ? MakeAggregatedItemKey(id, isHq)
                     : MakeNaturalSlotKey(inventoryType, slot);
 
                 Services.Logger.DebugOnly($"Slot {inventoryType}[{slot}] ItemId={id} Qty={quantity} Key=0x{key:X16}");
