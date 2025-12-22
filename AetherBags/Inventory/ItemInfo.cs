@@ -10,6 +10,8 @@ namespace AetherBags.Inventory;
 
 public sealed class ItemInfo : IEquatable<ItemInfo>
 {
+    public required ulong Key { get; set; }
+
     public required InventoryItem Item { get; set; }
     public required int ItemCount { get; set; }
 
@@ -44,6 +46,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     public int ItemLevel => (int)Row.LevelItem.RowId;
     public int Rarity => Row.Rarity;
     public uint VendorPrice => Row.PriceLow;
+    public uint StackSize => Row.StackSize;
 
     public RowRef<ItemUICategory> UiCategory => Row.ItemUICategory;
 
@@ -87,11 +90,11 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         => Description.Contains(value, StringComparison.OrdinalIgnoreCase);
 
     public bool Equals(ItemInfo? other)
-        => other is not null && Item.ItemId == other.Item.ItemId && ItemCount == other.ItemCount;
+        => other is not null && Key == other.Key;
 
     public override bool Equals(object? obj)
         => obj is ItemInfo other && Equals(other);
 
     public override int GetHashCode()
-        => HashCode.Combine(Item.ItemId, ItemCount);
+        => Key.GetHashCode();
 }

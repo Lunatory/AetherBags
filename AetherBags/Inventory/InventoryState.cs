@@ -1,3 +1,4 @@
+using AetherBags.Configuration;
 using AetherBags.Currency;
 using Dalamud.Game.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -6,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using AetherBags.Configuration;
 
 namespace AetherBags.Inventory;
 
@@ -46,19 +46,17 @@ public static unsafe class InventoryState
 
     private static readonly Dictionary<uint, CategoryInfo> CategoryInfoCache = new(capacity: 256);
 
-    private static readonly Dictionary<uint, AggregatedItem> AggByItemId = new(capacity: 512);
-    private static readonly Dictionary<uint, ItemInfo> ItemInfoByItemId = new(capacity: 512);
+    private static readonly Dictionary<ulong, AggregatedItem> AggByKey = new(capacity: 512);
+    private static readonly Dictionary<ulong, ItemInfo> ItemInfoByKey = new(capacity: 512);
 
     private static readonly Dictionary<uint, CategoryBucket> BucketsByKey = new(capacity: 256);
     private static readonly List<uint> SortedCategoryKeys = new(capacity: 256);
 
     private static readonly List<CategorizedInventory> AllCategories = new(capacity: 256);
-
     private static readonly List<CategorizedInventory> FilteredCategories = new(capacity: 256);
 
     private static readonly List<UserCategoryDefinition> UserCategoriesSortedScratch = new(capacity: 64);
-
-    private static readonly List<uint> RemoveKeysScratch = new(capacity: 256);
+    private static readonly List<ulong> RemoveKeysScratch = new(capacity: 256);
 
     private const uint UserCategoryKeyFlag = 0x8000_0000;
 
@@ -71,6 +69,9 @@ public static unsafe class InventoryState
     public static bool Contains(this IReadOnlyCollection<InventoryType> inventoryTypes, GameInventoryType type)
         => inventoryTypes.Contains((InventoryType)type);
 
+    private static ulong MakeNaturalSlotKey(InventoryType container, int slot)
+        => ((ulong)(uint)container << 32) | (uint)slot;
+
     public static void RefreshFromGame()
     {
         InventoryManager* inventoryManager = InventoryManager.Instance();
@@ -82,40 +83,77 @@ public static unsafe class InventoryState
 
         var config = System.Config;
 
+        InventoryStackMode stackMode = config.General.StackMode;
+
         bool userCategoriesEnabled = config.Categories.UserCategoriesEnabled;
         bool gameCategoriesEnabled = config.Categories.GameCategoriesEnabled;
-
         List<UserCategoryDefinition> userCategories = config.Categories.UserCategories;
 
-        AggByItemId.Clear();
+        AggByKey.Clear();
+        ItemInfoByKey.Clear();
+
+        BucketsByKey.Clear();
+        SortedCategoryKeys.Clear();
+        AllCategories.Clear();
+        FilteredCategories.Clear();
+
+        Services.Logger.DebugOnly($"RefreshFromGame StackMode={stackMode}");
+
+        int scannedSlots = 0;
+        int nonEmptySlots = 0;
+        int collisions = 0;
 
         for (int inventoryIndex = 0; inventoryIndex < BagInventories.Length; inventoryIndex++)
         {
-            var container = inventoryManager->GetInventoryContainer(BagInventories[inventoryIndex]);
+            var inventoryType = BagInventories[inventoryIndex];
+            var container = inventoryManager->GetInventoryContainer(inventoryType);
             if (container == null)
+            {
+                Services.Logger.DebugOnly($"Container null: {inventoryType}");
                 continue;
+            }
 
             int size = container->Size;
+            Services.Logger.DebugOnly($"Scanning {inventoryType} Size={size}");
+
             for (int slot = 0; slot < size; slot++)
             {
+                scannedSlots++;
+
                 ref var item = ref container->Items[slot];
                 uint id = item.ItemId;
                 if (id == 0)
                     continue;
 
+                nonEmptySlots++;
+
                 int quantity = item.Quantity;
 
-                if (AggByItemId.TryGetValue(id, out AggregatedItem agg))
+                ulong key = stackMode == InventoryStackMode.AggregateByItemId
+                    ? id
+                    : MakeNaturalSlotKey(inventoryType, slot);
+
+                Services.Logger.DebugOnly($"Slot {inventoryType}[{slot}] ItemId={id} Qty={quantity} Key=0x{key:X16}");
+
+                if (AggByKey.TryGetValue(key, out AggregatedItem agg))
                 {
+                    if (stackMode == InventoryStackMode.NaturalStacks)
+                    {
+                        collisions++;
+                        Services.Logger.DebugOnly($"COLLISION Key=0x{key:X16}: existing ItemId={agg.First.ItemId} new ItemId={id}");
+                    }
+
                     agg.Total += quantity;
-                    AggByItemId[id] = agg;
+                    AggByKey[key] = agg;
                 }
                 else
                 {
-                    AggByItemId.Add(id, new AggregatedItem { First = item, Total = quantity });
+                    AggByKey.Add(key, new AggregatedItem { First = item, Total = quantity });
                 }
             }
         }
+
+        Services.Logger.DebugOnly($"ScannedSlots={scannedSlots} NonEmptySlots={nonEmptySlots} AggByKey.Count={AggByKey.Count} Collisions={collisions}");
 
         foreach (var kvp in BucketsByKey)
         {
@@ -125,19 +163,20 @@ public static unsafe class InventoryState
             bucket.FilteredItems.Clear();
         }
 
-        foreach (var kvp in AggByItemId)
+        foreach (var kvp in AggByKey)
         {
-            uint itemId = kvp.Key;
+            ulong key = kvp.Key;
             AggregatedItem agg = kvp.Value;
 
-            if (!ItemInfoByItemId.TryGetValue(itemId, out ItemInfo? info))
+            if (!ItemInfoByKey.TryGetValue(key, out ItemInfo? info))
             {
                 info = new ItemInfo
                 {
+                    Key = key,
                     Item = agg.First,
                     ItemCount = agg.Total,
                 };
-                ItemInfoByItemId.Add(itemId, info);
+                ItemInfoByKey.Add(key, info);
             }
             else
             {
@@ -146,8 +185,10 @@ public static unsafe class InventoryState
             }
         }
 
+        Services.Logger.DebugOnly($"ItemInfoByKey.Count={ItemInfoByKey.Count}");
+
         // Bucket by user category
-        HashSet<uint> claimedItemIds = new(capacity: ItemInfoByItemId.Count);
+        HashSet<ulong> claimedKeys = new HashSet<ulong>(capacity: ItemInfoByKey.Count);
 
         if (userCategoriesEnabled && userCategories.Count > 0)
         {
@@ -167,13 +208,13 @@ public static unsafe class InventoryState
             for (int c = 0; c < UserCategoriesSortedScratch.Count; c++)
             {
                 UserCategoryDefinition category = UserCategoriesSortedScratch[c];
-                uint key = MakeUserCategoryKey(category.Order);
+                uint bucketKey = MakeUserCategoryKey(category.Order);
 
-                if (!BucketsByKey.TryGetValue(key, out CategoryBucket? bucket))
+                if (!BucketsByKey.TryGetValue(bucketKey, out CategoryBucket? bucket))
                 {
                     bucket = new CategoryBucket
                     {
-                        Key = key,
+                        Key = bucketKey,
                         Category = new CategoryInfo
                         {
                             Name = category.Name,
@@ -184,7 +225,7 @@ public static unsafe class InventoryState
                         FilteredItems = new List<ItemInfo>(capacity: 16),
                         Used = true,
                     };
-                    BucketsByKey.Add(key, bucket);
+                    BucketsByKey.Add(bucketKey, bucket);
                 }
                 else
                 {
@@ -194,18 +235,18 @@ public static unsafe class InventoryState
                     bucket.Category.Color = category.Color;
                 }
 
-                foreach (var itemKvp in ItemInfoByItemId)
+                foreach (var itemKvp in ItemInfoByKey)
                 {
+                    ulong itemKey = itemKvp.Key;
                     ItemInfo item = itemKvp.Value;
-                    uint itemId = item.Item.ItemId;
 
-                    if (claimedItemIds.Contains(itemId))
+                    if (claimedKeys.Contains(itemKey))
                         continue;
 
                     if (UserCategoryMatcher.Matches(item, category))
                     {
                         bucket.Items.Add(item);
-                        claimedItemIds.Add(itemId);
+                        claimedKeys.Add(itemKey);
                     }
                 }
 
@@ -217,11 +258,12 @@ public static unsafe class InventoryState
         // Game category bucket
         if (gameCategoriesEnabled)
         {
-            foreach (var itemKvp in ItemInfoByItemId)
+            foreach (var itemKvp in ItemInfoByKey)
             {
+                ulong itemKey = itemKvp.Key;
                 ItemInfo info = itemKvp.Value;
 
-                if (userCategoriesEnabled && claimedItemIds.Contains(info.Item.ItemId))
+                if (userCategoriesEnabled && claimedKeys.Contains(itemKey))
                     continue;
 
                 uint categoryKey = info.UiCategory.RowId;
@@ -253,9 +295,9 @@ public static unsafe class InventoryState
             if (!BucketsByKey.TryGetValue(0u, out CategoryBucket? miscBucket))
             {
                 CategoryInfo miscInfo;
-                if (ItemInfoByItemId.Count > 0)
+                if (ItemInfoByKey.Count > 0)
                 {
-                    var sample = ItemInfoByItemId.Values.First();
+                    var sample = ItemInfoByKey.Values.First();
                     miscInfo = GetCategoryInfoForKeyCached(0u, sample);
                 }
                 else
@@ -278,11 +320,12 @@ public static unsafe class InventoryState
                 miscBucket.Used = true;
             }
 
-            foreach (var itemKvp in ItemInfoByItemId)
+            foreach (var itemKvp in ItemInfoByKey)
             {
+                ulong itemKey = itemKvp.Key;
                 ItemInfo info = itemKvp.Value;
 
-                if (userCategoriesEnabled && claimedItemIds.Contains(info.Item.ItemId))
+                if (userCategoriesEnabled && claimedKeys.Contains(itemKey))
                     continue;
 
                 miscBucket.Items.Add(info);
@@ -292,19 +335,19 @@ public static unsafe class InventoryState
                 miscBucket.Used = false;
         }
 
-        if (ItemInfoByItemId.Count != AggByItemId.Count)
+        if (ItemInfoByKey.Count != AggByKey.Count)
         {
             RemoveKeysScratch.Clear();
 
-            foreach (var kvp in ItemInfoByItemId)
+            foreach (var kvp in ItemInfoByKey)
             {
-                uint itemId = kvp.Key;
-                if (!AggByItemId.ContainsKey(itemId))
-                    RemoveKeysScratch.Add(itemId);
+                ulong key = kvp.Key;
+                if (!AggByKey.ContainsKey(key))
+                    RemoveKeysScratch.Add(key);
             }
 
             for (int i = 0; i < RemoveKeysScratch.Count; i++)
-                ItemInfoByItemId.Remove(RemoveKeysScratch[i]);
+                ItemInfoByKey.Remove(RemoveKeysScratch[i]);
         }
 
         SortedCategoryKeys.Clear();
@@ -336,6 +379,11 @@ public static unsafe class InventoryState
             CategoryBucket bucket = BucketsByKey[key];
             AllCategories.Add(new CategorizedInventory(bucket.Key, bucket.Category, bucket.Items));
         }
+        int displayed = 0;
+        for (int i = 0; i < AllCategories.Count; i++)
+            displayed += AllCategories[i].Items.Count;
+
+        Services.Logger.DebugOnly($"AllCategories={AllCategories.Count} DisplayedItemsTotal={displayed}");
     }
 
     public static IReadOnlyList<CategorizedInventory> GetInventoryItemCategories(string filterString = "", bool invert = false)
@@ -431,7 +479,6 @@ public static unsafe class InventoryState
         return new CurrencyItem(itemId, isLimited);
     }
 
-
     public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(uint[] currencyIds)
     {
         if (currencyIds.Length == 0) return Array.Empty<CurrencyInfo>();
@@ -455,7 +502,7 @@ public static unsafe class InventoryState
         InventoryManager* inventoryManager = InventoryManager.Instance();
         var item = Services.DataManager.GetExcelSheet<Item>().GetRow(currencyItem.ItemId);
 
-        uint amount = (uint) inventoryManager->GetInventoryItemCount(currencyItem.ItemId);
+        uint amount = (uint)inventoryManager->GetInventoryItemCount(currencyItem.ItemId);
         uint maxAmount = item.StackSize;
         bool isCapped = false;
         if (currencyItem.IsLimited)
@@ -478,8 +525,8 @@ public static unsafe class InventoryState
 
     private static void ClearAll()
     {
-        AggByItemId.Clear();
-        ItemInfoByItemId.Clear();
+        AggByKey.Clear();
+        ItemInfoByKey.Clear();
 
         foreach (var kvp in BucketsByKey)
         {
@@ -540,7 +587,7 @@ public static unsafe class InventoryState
         public int Compare(ItemInfo? x, ItemInfo? y)
         {
             if (ReferenceEquals(x, y)) return 0;
-            if (x is null) return 1;   // nulls last
+            if (x is null) return 1;
             if (y is null) return -1;
 
             int a = x.ItemCount;

@@ -62,7 +62,7 @@ public static class BackupHelper {
                         File.Move(latestFile.FullName, archivePath);
                         moved = true;
                     } catch (IOException ioEx) when (i < 4) {
-                        Services.Logger.Debug($"Move failed, retrying in 100ms: {ioEx.Message}");
+                        Services.Logger.DebugOnly($"Move failed, retrying in 100ms: {ioEx.Message}");
                         global::System.Threading.Thread.Sleep(100);
                     }
                 }
@@ -79,7 +79,7 @@ public static class BackupHelper {
             var allBackups = dir.GetFiles().Where(f => f.Name.StartsWith($"{Name}.2") && f.Name.EndsWith(".zip"))
                 .OrderBy(f => f.LastWriteTime.Ticks).ToList();
             if (allBackups.Count > MaxBackups) {
-                Services.Logger.Debug($"Removing Oldest Backup: {allBackups[0].FullName}");
+                Services.Logger.DebugOnly($"Removing Oldest Backup: {allBackups[0].FullName}");
                 File.Delete(allBackups[0].FullName);
             }
         } catch (Exception exception) {

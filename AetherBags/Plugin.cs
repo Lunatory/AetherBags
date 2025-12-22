@@ -28,6 +28,16 @@ public class Plugin : IDalamudPlugin
             Size = new Vector2(750, 750),
         };
 
+        System.AddonConfigurationWindow = new AddonConfigurationWindow
+        {
+            InternalName = "AetherBags Config",
+            Title = "AetherBags Config",
+            Size = new Vector2(640, 512),
+        };
+
+        Services.PluginInterface.UiBuilder.OpenMainUi += System.AddonInventoryWindow.Toggle;
+        Services.PluginInterface.UiBuilder.OpenConfigUi += System.AddonConfigurationWindow.Toggle;
+
         Services.CommandManager.AddHandler("/aetherbags", new CommandInfo(OnCommand)
         {
             DisplayOrder = 1,
@@ -59,6 +69,7 @@ public class Plugin : IDalamudPlugin
         Services.CommandManager.RemoveHandler("/ab");
 
         System.AddonInventoryWindow.Dispose();
+        System.AddonConfigurationWindow.Dispose();
 
         KamiToolKitLibrary.Dispose();
     }
@@ -72,7 +83,7 @@ public class Plugin : IDalamudPlugin
                 if(args.Length == 0)
                     System.AddonInventoryWindow.Toggle();
                 if(args == "config")
-                    System.AddonInventoryWindow.Toggle();
+                    System.AddonConfigurationWindow.Toggle();
                 if (args == "import-sk")
                 {
                     // Manually import from SortaKinda for testing until we have a proper config window
@@ -89,6 +100,7 @@ public class Plugin : IDalamudPlugin
 
         #if DEBUG
             System.AddonInventoryWindow.Toggle();
+            System.AddonConfigurationWindow.Toggle();
         #endif
     }
 
