@@ -74,7 +74,6 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
         };
         AddNode(_useStableInsertCheckboxNode);
 
-        SubtractTab(1);
         _compactLookaheadNode = new CompactLookaheadNode
         {
             Size = new Vector2(320, 20)
