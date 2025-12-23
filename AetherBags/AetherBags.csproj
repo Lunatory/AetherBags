@@ -20,5 +20,13 @@
 
     <ItemGroup>
       <Content Include=".gitignore" />
+        <Content Include="Media\*.*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Visible>false</Visible>
+        </Content>
+        <Content Include="Media\Icons\*.*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Visible>false</Visible>
+        </Content>
     </ItemGroup>
 </Project>
