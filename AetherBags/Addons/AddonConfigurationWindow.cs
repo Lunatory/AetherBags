@@ -22,6 +22,8 @@ public class AddonConfigurationWindow : NativeAddon
         var tabContentY = ContentStartPosition.Y + 40;
         var tabContentHeight = ContentSize.Y - 40;
 
+        _tabContent.Clear();
+
         _tabBarNode = new TabBarNode
         {
             Position = ContentStartPosition,
