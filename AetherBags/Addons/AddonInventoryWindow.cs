@@ -10,6 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
 
@@ -20,6 +21,7 @@ public class AddonInventoryWindow : NativeAddon
 
     private WrappingGridNode<InventoryCategoryNode> _categoriesNode = null!;
     private TextInputWithHintNode _searchInputNode = null!;
+    private CircleButtonNode _settingsButtonNode = null!;
     private InventoryFooterNode _footerNode = null!;
 
     // Window constraints
@@ -71,6 +73,15 @@ public class AddonInventoryWindow : NativeAddon
             OnInputReceived = _ => RefreshCategoriesCore(autosize: false),
         };
         _searchInputNode.AttachNode(this);
+
+        _settingsButtonNode = new CircleButtonNode
+        {
+            Position = new Vector2(headerW - 48f, y),
+            Size = new Vector2(28f),
+            Icon = ButtonIcon.GearCog,
+            OnClick = System.AddonConfigurationWindow.Toggle
+        };
+        _settingsButtonNode.AttachNode(this);
 
         _footerNode = new InventoryFooterNode
         {
