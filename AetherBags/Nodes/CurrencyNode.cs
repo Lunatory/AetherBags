@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Numerics;
 using AetherBags.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -40,7 +41,7 @@ public class CurrencyNode : SimpleComponentNode
             _iconImageNode.IconId = value.IconId;
             _iconImageNode.Position = new Vector2(0f, 2f);
 
-            _countNode.String = value.Amount.ToString("N0");
+            _countNode.String = value.Amount.ToString("N0", CultureInfo.InvariantCulture);
             _countNode.Position = new Vector2(_iconImageNode.Bounds.Right + 2f, 0f);
 
             // Limit > Capped > Normal

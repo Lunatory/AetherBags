@@ -31,7 +31,7 @@ public class ColorPreviewNode : ResNode
         {
             IsVisible = true,
             TexturePath = GetAlphaTexturePath(),
-            WrapMode = WrapMode.Tile,
+            WrapMode = WrapMode.Stretch,
         };
         _alphaLayer.AttachNode(this);
 
@@ -88,7 +88,7 @@ public class ColorPreviewNode : ResNode
     private static string GetAlphaTexturePath()
     {
         var baseDir = Services.PluginInterface.AssemblyLocation.Directory!.FullName;
-        return Path.Combine(baseDir, "Media", "Textures", "alpha_background.png");
+        return Path.Combine(baseDir, "Assets", "alpha_background.png");
     }
 
     protected override void Dispose(bool disposing, bool isNativeDestructor)

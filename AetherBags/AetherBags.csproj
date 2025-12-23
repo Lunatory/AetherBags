@@ -21,14 +21,13 @@
     <ItemGroup>
       <Content Include=".gitignore" />
       <Content Include="changelog.md" />
-        <Content Include="Media\*.*">
+        <Content Include="Assets\*.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>false</Visible>
         </Content>
-        <Content Include="Media\Icons\*.*">
+        <Content Include="Assets\Icons\*.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>false</Visible>
         </Content>
-        <Content Include="Media\Textures\*.*" />
     </ItemGroup>
 </Project>
