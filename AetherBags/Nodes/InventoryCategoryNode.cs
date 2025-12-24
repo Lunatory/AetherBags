@@ -8,6 +8,7 @@ using KamiToolKit.Nodes;
 using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
 // TODO: Switch back to CS version when Dalamud Updated
 using DragDropFixedNode = AetherBags.Nodes.DragDropNode;
@@ -288,13 +289,20 @@ public class InventoryCategoryNode : SimpleComponentNode
     private unsafe void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo itemInfo)
     {
         if (payload.Type != DragDropType.Item) return;
-        Services.Logger.Debug($"Inventory DragDropNode Payload Accepted: {payload.Type} Int1: {payload.Int1} Int2: {payload.Int2}");
+        InventoryItem item = itemInfo.Item;
+        Services.Logger.Debug($"Inventory DragDropNode Payload Accepted: {payload.Type} Int1: {payload.Int1} Int2: {payload.Int2} ReferenceIndex: {payload.ReferenceIndex}");
         InventoryType inventoryType = InventoryType.GetInventoryTypeFromContainerId(payload.Int1);
         ushort sourceSlot = (ushort)payload.Int2;
-        System.AddonInventoryWindow.ManualInventoryRefresh();
+        ItemOrderModuleSorterItemEntry* itemEntry = item.GetItemOrderData();
+        Services.Logger.Debug($"{item.Slot} vs {item.GetSlot()}: entry: {itemEntry->Slot}");
+        Services.Logger.Info($"[OnPayload] Moving {inventoryType}@{sourceSlot} -> {item.Container}@{item.Slot} -> {item.Name.ExtractText()}");
+        InventoryManager.Instance()->MoveItemSlot(inventoryType, sourceSlot, item.Container, item.GetSlot(), true);
+
+
+        // System.AddonInventoryWindow.ManualInventoryRefresh();
+
         // Should work for swapping item but need a fake empty slot to put new items in probably.
         // Services.Logger.Debug($"Moving Item from {inventoryType} Slot {sourceSlot} to {itemInfo.Item.Container} Slot {itemInfo.Item.GetSlot()}");
-        InventoryManager.Instance()->MoveItemSlot(inventoryType, sourceSlot, itemInfo.Item.Container, itemInfo.Item.GetSlot(), false);
         //MoveItem(inventoryType, sourceSlot, itemInfo.Item.Container, itemInfo.Item.GetSlot());
     }
 

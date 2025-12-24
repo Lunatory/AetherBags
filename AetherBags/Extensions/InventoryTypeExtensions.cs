@@ -1,8 +1,10 @@
+using System;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
 namespace AetherBags.Extensions;
 
-public static class InventoryTypeExtensions
+public static unsafe class InventoryTypeExtensions
 {
     extension(InventoryType inventoryType)
     {
@@ -61,5 +63,36 @@ public static class InventoryTypeExtensions
                 72 => InventoryType.PremiumSaddleBag2,
                 _ => (InventoryType)0
             };
+
+        public ItemOrderModuleSorter* GetInventorySorter => inventoryType switch {
+            InventoryType.Inventory1 => ItemOrderModule.Instance()->InventorySorter,
+            InventoryType.Inventory2 => ItemOrderModule.Instance()->InventorySorter,
+            InventoryType.Inventory3 => ItemOrderModule.Instance()->InventorySorter,
+            InventoryType.Inventory4 => ItemOrderModule.Instance()->InventorySorter,
+            InventoryType.ArmoryMainHand => ItemOrderModule.Instance()->ArmouryMainHandSorter,
+            InventoryType.ArmoryOffHand => ItemOrderModule.Instance()->ArmouryOffHandSorter,
+            InventoryType.ArmoryHead => ItemOrderModule.Instance()->ArmouryHeadSorter,
+            InventoryType.ArmoryBody => ItemOrderModule.Instance()->ArmouryBodySorter,
+            InventoryType.ArmoryHands => ItemOrderModule.Instance()->ArmouryHandsSorter,
+            InventoryType.ArmoryLegs => ItemOrderModule.Instance()->ArmouryLegsSorter,
+            InventoryType.ArmoryFeets => ItemOrderModule.Instance()->ArmouryFeetSorter,
+            InventoryType.ArmoryEar => ItemOrderModule.Instance()->ArmouryEarsSorter,
+            InventoryType.ArmoryNeck => ItemOrderModule.Instance()->ArmouryNeckSorter,
+            InventoryType.ArmoryWrist => ItemOrderModule.Instance()->ArmouryWristsSorter,
+            InventoryType.ArmoryRings => ItemOrderModule.Instance()->ArmouryRingsSorter,
+            InventoryType.ArmorySoulCrystal => ItemOrderModule.Instance()->ArmourySoulCrystalSorter,
+            InventoryType.SaddleBag1 => ItemOrderModule.Instance()->SaddleBagSorter,
+            InventoryType.SaddleBag2 => ItemOrderModule.Instance()->SaddleBagSorter,
+            InventoryType.PremiumSaddleBag1 => ItemOrderModule.Instance()->PremiumSaddleBagSorter,
+            InventoryType.PremiumSaddleBag2 => ItemOrderModule.Instance()->PremiumSaddleBagSorter,
+            _ => throw new Exception($"Type Not Implemented: {inventoryType}"),
+        };
+
+        public int GetInventoryStartIndex => inventoryType switch {
+            InventoryType.Inventory2 => inventoryType.GetInventorySorter->ItemsPerPage,
+            InventoryType.Inventory3 => inventoryType.GetInventorySorter->ItemsPerPage * 2,
+            InventoryType.Inventory4 => inventoryType.GetInventorySorter->ItemsPerPage * 3,
+            _ => 0,
+        };
     }
 }
