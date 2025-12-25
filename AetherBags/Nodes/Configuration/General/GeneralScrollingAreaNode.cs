@@ -1,11 +1,11 @@
-using AetherBags.Configuration;
-using AetherBags.Nodes.Configuration.Layout;
-using KamiToolKit.Nodes;
 using System;
 using System.Linq;
 using System.Numerics;
+using AetherBags.Configuration;
+using AetherBags.Nodes.Configuration.Layout;
+using KamiToolKit.Nodes;
 
-namespace AetherBags.Nodes.Configuration;
+namespace AetherBags.Nodes.Configuration.General;
 
 public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNode>
 {
