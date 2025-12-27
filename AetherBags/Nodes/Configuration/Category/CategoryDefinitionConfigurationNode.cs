@@ -3,6 +3,7 @@ using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Nodes.Color;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using Lumina.Excel;
@@ -80,7 +81,12 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
         };
         AddNode(_enabledCheckbox);
 
-        AddNode(new LabelTextNode { Size = new Vector2(80, 20), String = "Name:" });
+        AddNode(new LabelTextNode
+        {
+            TextFlags = TextFlags.AutoAdjustNodeSize,
+            Size = new Vector2(80, 20),
+            String = "Name:"
+        });
         _nameInputNode = new TextInputNode
         {
             Size = new Vector2(250, 28),
@@ -95,7 +101,12 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
         };
         AddNode(_nameInputNode);
 
-        AddNode(new LabelTextNode { Size = new Vector2(80, 20), String = "Description:" });
+        AddNode(new LabelTextNode
+        {
+            TextFlags = TextFlags.AutoAdjustNodeSize,
+            Size = new Vector2(80, 20),
+            String = "Description:"
+        });
         _descriptionInputNode = new TextInputNode
         {
             Size = new Vector2(250, 28),
@@ -128,7 +139,12 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
         };
         AddNode(_colorInputNode);
 
-        AddNode(new LabelTextNode { Size = new Vector2(80, 20), String = "Priority:" });
+        AddNode(new LabelTextNode
+        {
+            TextFlags = TextFlags.AutoAdjustNodeSize,
+            Size = new Vector2(80, 20),
+            String = "Priority:"
+        });
         _priorityInputNode = new NumericInputNode
         {
             Size = new Vector2(120, 28),
@@ -144,7 +160,7 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
         };
         AddNode(_priorityInputNode);
 
-        AddNode(new LabelTextNode { Size = new Vector2(80, 20), String = "Order:" });
+        AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(80, 20), String = "Order:" });
         _orderInputNode = new NumericInputNode
         {
             Size = new Vector2(120, 28),
@@ -334,9 +350,9 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
         };
 
         var rangeRow = new HorizontalListNode { Size = new Vector2(300, 28), ItemSpacing = 8.0f };
-        rangeRow.AddNode(new LabelTextNode { Size = new Vector2(30, 28), String = "Min:" });
+        rangeRow.AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(30, 28), String = "Min:" });
         rangeRow.AddNode(minNode);
-        rangeRow.AddNode(new LabelTextNode { Size = new Vector2(30, 28), String = "Max:" });
+        rangeRow.AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(30, 28), String = "Max:" });
         rangeRow.AddNode(maxNode);
         AddNode(rangeRow);
 
@@ -386,9 +402,9 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
         };
 
         var rangeRow = new HorizontalListNode { Size = new Vector2(300, 28), ItemSpacing = 8.0f };
-        rangeRow.AddNode(new LabelTextNode { Size = new Vector2(30, 28), String = "Min:" });
+        rangeRow.AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(30, 28), String = "Min:" });
         rangeRow.AddNode(minNode);
-        rangeRow.AddNode(new LabelTextNode { Size = new Vector2(30, 28), String = "Max:" });
+        rangeRow.AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(30, 28), String = "Max:" });
         rangeRow.AddNode(maxNode);
         AddNode(rangeRow);
 

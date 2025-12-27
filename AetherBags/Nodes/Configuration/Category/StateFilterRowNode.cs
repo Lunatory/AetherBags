@@ -1,8 +1,9 @@
-using System;
-using System.Numerics;
 using AetherBags.Configuration;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using System;
+using System.Numerics;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
@@ -24,6 +25,7 @@ public sealed class StateFilterRowNode : HorizontalListNode
 
         _labelNode = new LabelTextNode
         {
+            TextFlags = TextFlags.AutoAdjustNodeSize,
             Size = new Vector2(100, 24),
             String = $"{label}:",
             TextColor = ColorHelper.GetColor(8),

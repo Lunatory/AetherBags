@@ -1,8 +1,9 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using KamiToolKit.Classes;
-using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
@@ -25,6 +26,7 @@ public sealed class UintListEditorNode : VerticalListNode
 
         var headerLabel = new LabelTextNode
         {
+            TextFlags = TextFlags.AutoAdjustNodeSize,
             Size = new Vector2(280, 18),
             String = label,
             TextColor = ColorHelper.GetColor(8),
@@ -117,6 +119,7 @@ public sealed class UintListItemNode :  HorizontalListNode
         var displayText = labelResolver != null ? $"{value} - {labelResolver(value)}" : value.ToString();
         var itemLabel = new LabelTextNode
         {
+            TextFlags = TextFlags.AutoAdjustNodeSize,
             Size = new Vector2(220, 22),
             String = displayText,
             TextColor = ColorHelper.GetColor(3),
