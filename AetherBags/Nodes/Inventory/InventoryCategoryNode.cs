@@ -5,6 +5,7 @@ using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -74,7 +75,7 @@ public class InventoryCategoryNode : SimpleComponentNode
 
             _categoryNameTextNode.String = _fullHeaderText;
             _categoryNameTextNode.TextColor = value.Category.Color;
-            _categoryNameTextNode.TooltipString = value.Category.Description;
+            _categoryNameTextNode.TextTooltip = value.Category.Description;
 
             UpdateItemGrid();
             RecalculateSize();
@@ -209,7 +210,7 @@ public class InventoryCategoryNode : SimpleComponentNode
             CreateInventoryDragDropNode);
     }
 
-    private InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
+    private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
     {
         InventoryItem item = data.Item;
 
@@ -228,65 +229,41 @@ public class InventoryCategoryNode : SimpleComponentNode
             },
             IsClickable = true,
             OnEnd = _ => System.AddonInventoryWindow.ManualInventoryRefresh(),
-            OnPayloadAccepted = (n, p) => OnPayloadAccepted(n, p, data),
-            OnRollOver = n =>
+            OnPayloadAccepted = (node, payload) => OnPayloadAccepted(node, payload, data),
+            OnRollOver = node =>
             {
                 BeginHeaderHover();
-                n.ShowInventoryItemTooltip(item.Container, item.Slot);
+                node.ShowInventoryItemTooltip(item.Container, item.Slot);
             },
-            OnRollOut = n =>
+            OnRollOut = node =>
             {
                 EndHeaderHover();
-                n.HideTooltip();
+
+                ushort addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(node)->Id;
+                AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
             },
             ItemInfo = data
         };
     }
 
-    private void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo targetItemInfo)
+    private void OnPayloadAccepted(DragDropNode _, DragDropPayload payload, ItemInfo targetItemInfo)
     {
-        if (payload.Type != DragDropType.Item && payload.Type != DragDropType.Inventory_Item)
+        Services.Logger.Debug($"[OnPayload] Received payload of type {payload.Type}, Int1={payload.Int1}, Int2={payload.Int2}, RefIndex={payload.ReferenceIndex}, Text={payload.Text}");
+        if (!payload.IsValidInventoryPayload)
             return;
 
-        var (sourceContainer, sourceSlot) = ResolveSourceFromPayload(payload);
+        InventoryLocation sourceLocation = payload.InventoryLocation;
 
-        if (sourceContainer == 0)
+        if (!sourceLocation.IsValid)
         {
             Services.Logger.Warning($"[OnPayload] Could not resolve source from payload");
             return;
         }
 
-        InventoryType targetContainer = targetItemInfo.Item.Container;
-        ushort targetSlot = (ushort)targetItemInfo.Item.Slot;
+        InventoryLocation targetLocation = new InventoryLocation(targetItemInfo.Item.Container, (ushort)targetItemInfo.Item.Slot);
 
-        Services.Logger.Debug($"[OnPayload] Moving {sourceContainer}@{sourceSlot} -> {targetContainer}@{targetSlot}");
+        Services.Logger.Debug($"[OnPayload] Moving {sourceLocation.ToString()} -> {targetLocation.ToString()}");
 
-        InventoryMoveHelper.MoveItem(sourceContainer, sourceSlot, targetContainer, targetSlot);
-    }
-
-    private static (InventoryType Container, ushort Slot) ResolveSourceFromPayload(DragDropPayload payload)
-    {
-        if (payload.Type == DragDropType.Inventory_Item)
-        {
-            return ((InventoryType)payload.Int1, (ushort)payload.Int2);
-        }
-
-        int containerId = payload.Int1;
-        int slotIndex = payload.Int2;
-
-        InventoryType sourceContainer = InventoryType.GetInventoryTypeFromContainerId(containerId);
-
-        if (sourceContainer == 0)
-            return (0, 0);
-
-        // For main inventory, resolve the real slot via ItemOrderModule
-        if (sourceContainer.IsMainInventory)
-        {
-            var (realContainer, realSlot) = sourceContainer.GetRealItemLocation(slotIndex);
-            return (realContainer, realSlot);
-        }
-
-        // For other containers (saddlebags, armory, etc.), use the slot directly
-        return (sourceContainer, (ushort)slotIndex);
+        InventoryMoveHelper.MoveItem(sourceLocation.Container, sourceLocation.Slot, targetLocation.Container, targetLocation.Slot);
     }
 }
