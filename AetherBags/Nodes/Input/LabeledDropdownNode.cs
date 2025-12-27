@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes;
@@ -59,5 +58,11 @@ public class LabeledDropdownNode : SimpleComponentNode {
     {
         get => _dropDownNode.Options!;
         set => _dropDownNode.Options = value;
+    }
+
+    public TextFlags LabelTextFlags
+    {
+        get => _labelNode.TextFlags;
+        set => _labelNode.TextFlags = value;
     }
 }

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Nodes.Configuration.Layout;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.General;
@@ -23,6 +24,7 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
             Size = new Vector2(300, 20),
             IsEnabled = true,
             LabelText = "Stack Mode",
+            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
             Options = Enum.GetNames(typeof(InventoryStackMode)).ToList(),
             SelectedOption = config.StackMode.ToString(),
             OnOptionSelected = selected =>

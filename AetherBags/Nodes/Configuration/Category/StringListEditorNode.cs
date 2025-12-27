@@ -1,8 +1,9 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using KamiToolKit.Classes;
-using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
@@ -23,6 +24,7 @@ public sealed class StringListEditorNode : VerticalListNode
 
         var headerLabel = new LabelTextNode
         {
+            TextFlags = TextFlags.AutoAdjustNodeSize,
             Size = new Vector2(280, 18),
             String = label,
             TextColor = ColorHelper.GetColor(8),

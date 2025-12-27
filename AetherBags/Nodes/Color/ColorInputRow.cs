@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Addons;
 
@@ -47,8 +48,9 @@ public class ColorInputRow : HorizontalListNode
 
         _labelTextNode = new LabelTextNode
         {
+            TextFlags = TextFlags.AutoAdjustNodeSize,
             Position = new Vector2(28, 0),
-            Size = Size with { Y = 24 },
+            Height = 24,
             String = Label ?? string.Empty,
         };
         _labelTextNode.AttachNode(this);

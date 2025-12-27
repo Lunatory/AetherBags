@@ -2,6 +2,7 @@
 using KamiToolKit.Classes.Timelines;
 using KamiToolKit.Nodes;
 using System.Numerics;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace AetherBags.Nodes.Configuration.Layout;
 
@@ -16,7 +17,8 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
 
         TitleNode = new LabelTextNode
         {
-            Size = Size with { Y = 24 },
+            TextFlags = TextFlags.AutoAdjustNodeSize,
+            Height = 24,
             String = "Compact Lookahead",
         };
         TitleNode.AttachNode(this);

@@ -15,12 +15,10 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
     {
         GeneralSettings config = System.Config.General;
 
-        var titleNode = new LabelTextNode
+        var titleNode = new CategoryTextNode
         {
-            Size = Size with { Y = 18 },
+            Height = 18,
             String = "Layout Configuration",
-            TextColor = ColorHelper.GetColor(2),
-            TextOutlineColor = ColorHelper.GetColor(0),
         };
         AddNode(titleNode);
 

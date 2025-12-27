@@ -21,6 +21,9 @@ public class AddonCategoryConfigurationWindow : NativeAddon
 
     private List<CategoryWrapper> _categoryWrappers = new();
 
+    private bool _suppressSelectionListRefresh;
+    private bool _pendingSelectionListRefresh;
+
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
         _categoryWrappers = CreateCategoryWrappers();
@@ -79,11 +82,26 @@ public class AddonCategoryConfigurationWindow : NativeAddon
     {
         if (_configNode is null) return;
 
-        _configNode.IsVisible = newOption is not null;
-        if (_nothingSelectedTextNode is not null)
-            _nothingSelectedTextNode.IsVisible = newOption is null;
+        _suppressSelectionListRefresh = true;
+        try
+        {
+            _configNode.IsVisible = newOption is not null;
 
-        _configNode.ConfigurationOption = newOption;
+            if (_nothingSelectedTextNode is not null)
+                _nothingSelectedTextNode.IsVisible = newOption is null;
+
+            _configNode.ConfigurationOption = newOption;
+        }
+        finally
+        {
+            _suppressSelectionListRefresh = false;
+
+            if (_pendingSelectionListRefresh)
+            {
+                _pendingSelectionListRefresh = false;
+                _selectionListNode?.UpdateList();
+            }
+        }
     }
 
     private void OnAddNewCategory(ModifyListNode<CategoryWrapper> listNode)
@@ -99,6 +117,8 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         var newWrapper = new CategoryWrapper(newCategory);
         _categoryWrappers.Add(newWrapper);
         listNode.AddOption(newWrapper);
+
+        RefreshSelectionList();
     }
 
     private void OnRemoveCategory(CategoryWrapper categoryWrapper)
@@ -107,10 +127,23 @@ public class AddonCategoryConfigurationWindow : NativeAddon
 
         System.Config.Categories.UserCategories.Remove(categoryWrapper.CategoryDefinition);
         _categoryWrappers.Remove(categoryWrapper);
+
+        RefreshSelectionList();
+
+        if (_configNode is not null && ReferenceEquals(_configNode.ConfigurationOption, categoryWrapper))
+        {
+            OnOptionChanged(null);
+        }
     }
 
     private void RefreshSelectionList()
     {
+        if (_suppressSelectionListRefresh)
+        {
+            _pendingSelectionListRefresh = true;
+            return;
+        }
+
         _selectionListNode?.UpdateList();
     }
 }
