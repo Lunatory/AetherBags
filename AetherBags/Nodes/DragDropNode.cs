@@ -17,8 +17,8 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
 
     // FIX: Manually expose the pointers that are 'internal' in KamiToolKit
     // We access the raw AtkComponentNode* via 'this.ResNode' and cast from there.
-    private new AtkComponentDragDrop* Component => (AtkComponentDragDrop*)Node->Component;
-    private new AtkUldComponentDataDragDrop* Data => (AtkUldComponentDataDragDrop*)Component->UldManager.ComponentData;
+    private AtkComponentDragDrop* Component => (AtkComponentDragDrop*)Node->Component;
+    private AtkUldComponentDataDragDrop* Data => (AtkUldComponentDataDragDrop*)Component->UldManager.ComponentData;
 
     public readonly ImageNode DragDropBackgroundNode;
     public readonly IconNode IconNode;
