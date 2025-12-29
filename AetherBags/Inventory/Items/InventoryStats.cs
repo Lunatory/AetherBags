@@ -1,4 +1,4 @@
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Items;
 
 public readonly struct InventoryStats
 {

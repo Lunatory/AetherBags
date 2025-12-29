@@ -1,5 +1,6 @@
 using System.Numerics;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Context;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.Timelines;

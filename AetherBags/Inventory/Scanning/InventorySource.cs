@@ -1,0 +1,56 @@
+using FFXIVClientStructs.FFXIV.Client.Game;
+
+namespace AetherBags.Inventory.Scanning;
+
+public enum InventorySourceType
+{
+    MainBags,
+    SaddleBag,
+    Retainer,
+}
+
+public static class InventorySourceDefinitions
+{
+    public static readonly InventoryType[] MainBags =
+    [
+        InventoryType.Inventory1,
+        InventoryType.Inventory2,
+        InventoryType.Inventory3,
+        InventoryType.Inventory4,
+    ];
+
+    public static readonly InventoryType[] SaddleBag =
+    [
+        InventoryType.SaddleBag1,
+        InventoryType.SaddleBag2,
+        InventoryType.PremiumSaddleBag1,
+        InventoryType.PremiumSaddleBag2,
+    ];
+
+    public static readonly InventoryType[] Retainer =
+    [
+        InventoryType.RetainerPage1,
+        InventoryType.RetainerPage2,
+        InventoryType.RetainerPage3,
+        InventoryType.RetainerPage4,
+        InventoryType.RetainerPage5,
+        InventoryType.RetainerPage6,
+        InventoryType.RetainerPage7,
+    ];
+
+    public static InventoryType[] GetInventories(InventorySourceType source) => source switch
+    {
+        InventorySourceType.MainBags => MainBags,
+        InventorySourceType.SaddleBag => SaddleBag,
+        InventorySourceType.Retainer => Retainer,
+        _ => MainBags,
+    };
+
+    public static int GetTotalSlots(InventorySourceType source) => source switch
+    {
+        InventorySourceType.MainBags => 140,        // 4 * 35
+        InventorySourceType.SaddleBag => 70,        // 2 * 35 TODO: Premium adds another 70
+        InventorySourceType.Retainer => 175,        // 7 * 25
+        _ => 140,
+    };
+}

@@ -1,8 +1,9 @@
-using AetherBags.Configuration;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using System.Collections.Generic;
+using AetherBags.Configuration;
+using AetherBags.Inventory.Items;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Scanning;
 
 public static unsafe class InventoryScanner
 {
@@ -46,20 +47,30 @@ public static unsafe class InventoryScanner
     public static ulong MakeNaturalSlotKey(InventoryType container, int slot)
         => ((ulong)(uint)container << 32) | (uint)slot;
 
+    // Backwards compatible
     public static void ScanBags(
         InventoryManager* inventoryManager,
         InventoryStackMode stackMode,
         Dictionary<ulong, AggregatedItem> aggByKey)
+        => ScanInventories(inventoryManager, stackMode, aggByKey, InventorySourceType.MainBags);
+
+    public static void ScanInventories(
+        InventoryManager* inventoryManager,
+        InventoryStackMode stackMode,
+        Dictionary<ulong, AggregatedItem> aggByKey,
+        InventorySourceType source)
     {
         aggByKey.Clear();
+
+        var inventories = InventorySourceDefinitions.GetInventories(source);
 
         int scannedSlots = 0;
         int nonEmptySlots = 0;
         int collisions = 0;
 
-        for (int inventoryIndex = 0; inventoryIndex < BagInventories.Length; inventoryIndex++)
+        for (int inventoryIndex = 0; inventoryIndex < inventories.Length; inventoryIndex++)
         {
-            var inventoryType = BagInventories[inventoryIndex];
+            var inventoryType = inventories[inventoryIndex];
             var container = inventoryManager->GetInventoryContainer(inventoryType);
             if (container == null)
             {
@@ -164,16 +175,38 @@ public static unsafe class InventoryScanner
     public static InventoryContainer* GetInventoryContainer(InventoryType inventoryType)
         => InventoryManager.Instance()->GetInventoryContainer(inventoryType);
 
+    // Backwards compability TODO: Remove
     public static string GetEmptyItemSlotsString()
-    {
-        uint empty = InventoryManager.Instance()->GetEmptySlotsInBag();
-        uint used = 140 - empty;
-        return $"{used}/140";
-    }
-}
+        => GetEmptySlotsString(InventorySourceType. MainBags);
 
-public struct AggregatedItem
-{
-    public InventoryItem First;
-    public int Total;
+    public static string GetEmptySlotsString(InventorySourceType source)
+    {
+        int total = InventorySourceDefinitions.GetTotalSlots(source);
+        uint empty = source switch
+        {
+            InventorySourceType.MainBags => InventoryManager.Instance()->GetEmptySlotsInBag(),
+            InventorySourceType.SaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.SaddleBag),
+            InventorySourceType.Retainer => GetEmptySlotsInContainer(InventorySourceDefinitions.Retainer),
+            _ => 0,
+        };
+        uint used = (uint)total - empty;
+        return $"{used}/{total}";
+    }
+
+    private static uint GetEmptySlotsInContainer(InventoryType[] inventories)
+    {
+        uint empty = 0;
+        var inventoryManager = InventoryManager.Instance();
+        foreach (var inv in inventories)
+        {
+            var container = inventoryManager->GetInventoryContainer(inv);
+            if (container == null) continue;
+            for (int i = 0; i < container->Size; i++)
+            {
+                if (container->Items[i]. ItemId == 0)
+                    empty++;
+            }
+        }
+        return empty;
+    }
 }

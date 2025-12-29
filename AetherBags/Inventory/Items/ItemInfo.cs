@@ -1,11 +1,12 @@
-using FFXIVClientStructs.FFXIV.Client.Game;
-using Lumina.Excel;
-using Lumina.Excel.Sheets;
 using System;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using AetherBags.Inventory.Context;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using Lumina.Excel;
+using Lumina.Excel.Sheets;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Items;
 
 public sealed class ItemInfo : IEquatable<ItemInfo>
 {

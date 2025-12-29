@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Categories;
 using AetherBags.Nodes.Color;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;

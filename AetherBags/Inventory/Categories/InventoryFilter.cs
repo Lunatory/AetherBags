@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using AetherBags.Inventory.Items;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Categories;
 
 public static class InventoryFilter
 {

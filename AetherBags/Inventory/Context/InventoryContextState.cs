@@ -4,7 +4,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Arrays;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Context;
 
 public static unsafe class InventoryContextState
 {

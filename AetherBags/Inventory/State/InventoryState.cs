@@ -1,12 +1,16 @@
+using System.Collections.Generic;
+using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Currency;
+using AetherBags.Inventory.Categories;
+using AetherBags.Inventory.Context;
+using AetherBags.Inventory.Items;
+using AetherBags.Inventory.Scanning;
 using Dalamud.Game.Inventory;
 using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.State;
 
 public static unsafe class InventoryState
 {

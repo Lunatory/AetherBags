@@ -1,6 +1,7 @@
 using System;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
+using AetherBags.Inventory.State;
 using Dalamud.Game.Command;
 
 namespace AetherBags.Commands;

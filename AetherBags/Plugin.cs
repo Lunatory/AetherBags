@@ -5,6 +5,7 @@ using AetherBags.Commands;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
 using AetherBags.Inventory;
+using AetherBags.Inventory.State;
 using Dalamud.Plugin;
 using KamiToolKit;
 

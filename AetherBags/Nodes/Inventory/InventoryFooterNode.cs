@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Currency;
 using AetherBags.Inventory;
+using AetherBags.Inventory.State;
 using AetherBags.Nodes.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;

@@ -2,6 +2,8 @@ using System;
 using System.Numerics;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Categories;
+using AetherBags.Inventory.Items;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -33,6 +35,7 @@ public class InventoryCategoryNode : SimpleComponentNode
     private string _fullHeaderText = string.Empty;
 
     public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
+    public Action? OnRefreshRequested { get; set; }
 
     public InventoryCategoryNode()
     {
@@ -287,7 +290,7 @@ public class InventoryCategoryNode : SimpleComponentNode
             Services.Logger.Debug($"[OnPayload] Source and target are in the same container group; no move performed");
             node.Payload = payload;
             node.IconId = item.IconId;
-            System.AddonInventoryWindow.ManualInventoryRefresh();
+            OnRefreshRequested?.Invoke();
             return;
         };
 
@@ -297,6 +300,6 @@ public class InventoryCategoryNode : SimpleComponentNode
             sourceLocation.Container, sourceLocation.Slot,
             targetLocation.Container, targetLocation.Slot
         );
-        System.AddonInventoryWindow.ManualInventoryRefresh();
+        OnRefreshRequested?.Invoke();
     }
 }

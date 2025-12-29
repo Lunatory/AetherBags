@@ -1,7 +1,7 @@
 using System.Numerics;
 using KamiToolKit.Classes;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Categories;
 
 public class CategoryInfo
 {

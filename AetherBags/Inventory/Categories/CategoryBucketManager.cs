@@ -1,9 +1,10 @@
-using AetherBags.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AetherBags.Configuration;
+using AetherBags.Inventory.Items;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Categories;
 
 public static class CategoryBucketManager
 {
