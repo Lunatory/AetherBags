@@ -132,7 +132,7 @@ public class AddonInventoryWindow : NativeAddon
         RefreshCategoriesCore(true);
     }
 
-    public void UpdateLootedCategory(IReadOnlyList<LootedItemInfo> lootedItemInfos)
+    /*public void UpdateLootedCategory(IReadOnlyList<LootedItemInfo> lootedItemInfos)
     {
         if (!Services.ClientState.IsLoggedIn) return;
         _recentlyLootedCategoryNode?.CategorizedInventory.Items.AddRange(
@@ -144,7 +144,7 @@ public class AddonInventoryWindow : NativeAddon
             })
             .ToList());
         RefreshCategoriesCore(true);
-    }
+    }*/
 
     public void ManualCurrencyRefresh()
     {

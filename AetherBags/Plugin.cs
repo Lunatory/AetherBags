@@ -47,7 +47,7 @@ public unsafe class Plugin : IDalamudPlugin
 
         _commandHandler = new CommandHandler();
 
-        Services.GameInventory.InventoryChanged += InventoryState.OnRawItemAdded;
+        // Services.GameInventory.InventoryChanged += InventoryState.OnRawItemAdded;
 
         Services.ClientState.Login += OnLogin;
         Services.ClientState.Logout += OnLogout;
@@ -64,7 +64,7 @@ public unsafe class Plugin : IDalamudPlugin
     {
         Util.SaveConfig(System.Config);
 
-        Services.GameInventory.InventoryChanged -= InventoryState.OnRawItemAdded;
+        // Services.GameInventory.InventoryChanged -= InventoryState.OnRawItemAdded;
 
         Services.ClientState.Login -= OnLogin;
         Services.ClientState.Logout -= OnLogout;
