@@ -15,8 +15,8 @@ public static unsafe class InventoryContextState
 
     public static void RefreshMaps()
     {
-        EligibleSlots. Clear();
-        VisualLocationMap. Clear();
+        EligibleSlots.Clear();
+        VisualLocationMap.Clear();
 
         var sorter = ItemOrderModule.Instance()->InventorySorter;
         if (sorter == null) return;
@@ -31,7 +31,7 @@ public static unsafe class InventoryContextState
 
         for (int displayIdx = 0; displayIdx < 140; displayIdx++)
         {
-            var entry = sorter->Items[displayIdx]. Value;
+            var entry = sorter->Items[displayIdx].Value;
             if (entry == null) continue;
 
             int realPage = entry->Page;
@@ -46,7 +46,7 @@ public static unsafe class InventoryContextState
             if (hasContext && invArray != null)
             {
                 var itemData = invArray->Items[displayIdx];
-                if (itemData. IconId == 0) continue;
+                if (itemData.IconId == 0) continue;
 
                 bool eligible = itemData.ItemFlags.MirageFlag == 0;
                 if (eligible)
