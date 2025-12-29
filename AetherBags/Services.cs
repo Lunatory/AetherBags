@@ -8,6 +8,7 @@ namespace AetherBags;
 public class Services
 {
     [PluginService] public static IAddonLifecycle AddonLifecycle { get; set; } = null!;
+    [PluginService] public static IChatGui ChatGui { get; set; } = null!;
     [PluginService] public static IClientState ClientState { get; private set; } = null!;
     [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] public static IDataManager DataManager { get; set; } = null!;
