@@ -166,7 +166,7 @@ public static unsafe class InventoryState
 
         if (updateRequested)
         {
-            System.AddonInventoryWindow?.UpdateLootedCategory(LootedItems ?? []);
+            // System.AddonInventoryWindow?.UpdateLootedCategory(LootedItems ?? []);
         }
     }
 
