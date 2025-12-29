@@ -13,6 +13,8 @@ public class GeneralSettings
     public bool CompactStableInsert { get; set; } = true;
     public bool OpenWithGameInventory { get; set; } = true;
     public bool HideGameInventory { get; set; } = false;
+    public bool ShowCategoryItemCount { get; set; } = false;
+    public bool LinkItemEnabled { get; set; } = false;
 }
 
 public enum InventoryStackMode : byte

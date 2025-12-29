@@ -297,6 +297,16 @@ public class AddonInventoryWindow : NativeAddon
         }, delayTicks: 1);
     }
 
+    public void SetSearchText(string searchText)
+    {
+        Services.Framework.RunOnTick(() =>
+        {
+            if(IsOpen) _searchInputNode.SearchString = searchText;
+            RefreshCategoriesCore(autosize: true);
+        }, delayTicks: 1);
+    }
+
+
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
         Services.AddonLifecycle.UnregisterListener(OnInventoryUpdate);

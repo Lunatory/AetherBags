@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using AetherBags.AddonLifecycles;
 using AetherBags.Addons;
+using AetherBags.Commands;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
 using Dalamud.Plugin;
@@ -16,6 +17,7 @@ public unsafe class Plugin : IDalamudPlugin
 {
     private static string HelpDescription => "Opens your inventory.";
 
+    private readonly CommandHandler _commandHandler;
     private readonly InventoryHooks _inventoryHooks;
     private readonly InventoryLifecycles _inventoryLifecycles;
 
@@ -46,18 +48,8 @@ public unsafe class Plugin : IDalamudPlugin
         Services.PluginInterface.UiBuilder.OpenMainUi += System.AddonInventoryWindow.Toggle;
         Services.PluginInterface.UiBuilder.OpenConfigUi += System.AddonConfigurationWindow.Toggle;
 
-        Services.CommandManager.AddHandler("/aetherbags", new CommandInfo(OnCommand)
-        {
-            DisplayOrder = 1,
-            ShowInHelp = true,
-            HelpMessage = HelpDescription
-        });
-        Services.CommandManager.AddHandler("/ab", new CommandInfo(OnCommand)
-        {
-            DisplayOrder = 2,
-            ShowInHelp = true,
-            HelpMessage = HelpDescription
-        });
+        _commandHandler = new CommandHandler();
+
         Services.ClientState.Login += OnLogin;
         Services.ClientState.Logout += OnLogout;
 
@@ -76,8 +68,7 @@ public unsafe class Plugin : IDalamudPlugin
         Services.ClientState.Login -= OnLogin;
         Services.ClientState.Logout -= OnLogout;
 
-        Services.CommandManager.RemoveHandler("/aetherbags");
-        Services.CommandManager.RemoveHandler("/ab");
+        _commandHandler.Dispose();
 
         System.AddonInventoryWindow.Dispose();
         System.AddonConfigurationWindow.Dispose();
@@ -86,26 +77,6 @@ public unsafe class Plugin : IDalamudPlugin
 
         _inventoryHooks.Dispose();
         _inventoryLifecycles.Dispose();
-    }
-
-    private void OnCommand(string command, string args)
-    {
-        switch (command)
-        {
-            case "/aetherbags":
-            case "/ab":
-                if(args.Length == 0)
-                    System.AddonInventoryWindow.Toggle();
-                if(args == "config")
-                    System.AddonConfigurationWindow.Toggle();
-                if (args == "import-sk")
-                {
-                    // Manually import from SortaKinda for testing until we have a proper config window
-                    ImportExportResetHelper.TryImportSortaKindaFromClipboard(true);
-                    System.AddonInventoryWindow.ManualInventoryRefresh();
-                }
-                break;
-        }
     }
 
     private void OnLogin()
