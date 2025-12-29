@@ -88,7 +88,7 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
 
             Timeline?.PlayAnimation(101);
         }
-    }
+    } = null!;
 
     // Future Zeff, this always goes on a parent
     private Timeline ParentLabels => new TimelineBuilder()

@@ -31,7 +31,14 @@ public unsafe class Plugin : IDalamudPlugin
 
         System.AddonInventoryWindow = new AddonInventoryWindow
         {
-            InternalName = "AetherBags",
+            InternalName = "AetherBags_MainBags",
+            Title = "AetherBags",
+            Size = new Vector2(750, 750),
+        };
+
+        System.AddonSaddleBagWindow = new AddonSaddleBagWindow
+        {
+            InternalName = "AetherBags_SaddleBag",
             Title = "AetherBags",
             Size = new Vector2(750, 750),
         };

@@ -6,6 +6,8 @@ public enum InventorySourceType
 {
     MainBags,
     SaddleBag,
+    PremiumSaddleBag,
+    AllSaddleBags,
     Retainer,
 }
 
@@ -20,6 +22,18 @@ public static class InventorySourceDefinitions
     ];
 
     public static readonly InventoryType[] SaddleBag =
+    [
+        InventoryType.SaddleBag1,
+        InventoryType.SaddleBag2,
+    ];
+
+    public static readonly InventoryType[] PremiumSaddleBag =
+    [
+        InventoryType.PremiumSaddleBag1,
+        InventoryType.PremiumSaddleBag2,
+    ];
+
+    public static readonly InventoryType[] AllSaddleBags =
     [
         InventoryType.SaddleBag1,
         InventoryType.SaddleBag2,
@@ -49,7 +63,9 @@ public static class InventorySourceDefinitions
     public static int GetTotalSlots(InventorySourceType source) => source switch
     {
         InventorySourceType.MainBags => 140,        // 4 * 35
-        InventorySourceType.SaddleBag => 70,        // 2 * 35 TODO: Premium adds another 70
+        InventorySourceType.SaddleBag => 70,        // 2 * 35
+        InventorySourceType.PremiumSaddleBag => 70, // 2 * 35
+        InventorySourceType.AllSaddleBags => 140,   // 2 * 35
         InventorySourceType.Retainer => 175,        // 7 * 25
         _ => 140,
     };

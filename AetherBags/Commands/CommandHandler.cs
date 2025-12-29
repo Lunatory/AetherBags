@@ -91,6 +91,10 @@ public class CommandHandler : IDisposable
                 PrintChat($"{stats.UsedSlots}/{stats.TotalSlots} slots used ({stats.UsagePercent:F0}%) | {stats.TotalItems} unique items | {stats.CategoryCount} categories");
                 break;
 
+            case "saddle":
+                System.AddonSaddleBagWindow.Toggle();
+                break;
+
             case "help":
             case "?":
                 PrintHelp();

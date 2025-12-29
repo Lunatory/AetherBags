@@ -16,8 +16,10 @@ public class Services
     [PluginService] public static IGameGui GameGui { get; private set; } = null!;
     [PluginService] public static IGameInventory GameInventory { get; set; } = null!;
     [PluginService] public static IKeyState KeyState { get; private set; } = null!;
+    [PluginService] public static IPlayerState PlayerState { get; private set; } = null!;
     [PluginService] public static IPluginLog Logger { get; private set; } = null!;
     [PluginService] public static INotificationManager NotificationManager { get; private set; } = null!;
+    [PluginService] public static IObjectTable ObjectTable { get; private set; } = null!;
     // TODO: Remove cause temp
     [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
     [PluginService] public static IGameInteropProvider GameInteropProvider { get; private set; } = null!;

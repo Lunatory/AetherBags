@@ -47,7 +47,7 @@ public static unsafe class InventoryScanner
     public static ulong MakeNaturalSlotKey(InventoryType container, int slot)
         => ((ulong)(uint)container << 32) | (uint)slot;
 
-    // Backwards compatible
+    // Backwards compatible TODO: Remove
     public static void ScanBags(
         InventoryManager* inventoryManager,
         InventoryStackMode stackMode,
