@@ -5,10 +5,12 @@ using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.NativeWrapper;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Text.ReadOnly;
+using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace AetherBags.AddonLifecycles;
 
@@ -39,6 +41,12 @@ public class InventoryLifecycles : IDisposable
         if (args is not AddonRefreshArgs refreshArgs)
             return;
 
+        if (!Services.ClientState.IsLoggedIn)
+            return;
+
+        if (Services.Condition[ConditionFlag.BetweenAreas] || Services.Condition[ConditionFlag.BetweenAreas51])
+            return;
+
         GeneralSettings config = System.Config.General;
 
         Services.Logger.Debug("PreRefresh event for Inventory detected");
@@ -50,6 +58,9 @@ public class InventoryLifecycles : IDisposable
         AtkValue* value1 = (AtkValue*)atkValues[1].Address;
         AtkValue* value5 = (AtkValue*)atkValues[5].Address;
         AtkValue* value6 = (AtkValue*)atkValues[6].Address;
+
+        if (value5->Type != ValueType.ManagedString || value6->Type != ValueType.ManagedString)
+            return;
 
         int openTitleId = value1->Int;
         ReadOnlySeString title = value5->String.AsReadOnlySeString();
