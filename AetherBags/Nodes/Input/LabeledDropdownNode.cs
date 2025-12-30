@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Input;
 
 public class LabeledDropdownNode : SimpleComponentNode {
     private readonly GridNode _gridNode;

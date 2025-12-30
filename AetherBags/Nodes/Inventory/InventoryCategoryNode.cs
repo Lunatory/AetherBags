@@ -224,7 +224,10 @@ public class InventoryCategoryNode : SimpleComponentNode
         InventoryItem item = data.Item;
         InventoryMappedLocation visualLocation = data.VisualLocation;
 
-        bool useVisualLocation = item.Container.IsMainInventory;
+        int startIndex = item.Container.GetInventoryStartIndex;
+        int absoluteIndex = startIndex + visualLocation.Slot;
+
+        bool useVisualLocation = true;
         bool isSlotBlocked = item.Container.IsMainInventory && data.IsSlotBlocked;
         float alpha = !isSlotBlocked && data.IsEligibleForContext ? 1.0f : 0.4f;
 
@@ -241,6 +244,7 @@ public class InventoryCategoryNode : SimpleComponentNode
                 Type = DragDropType.Item,
                 Int1 = useVisualLocation ? visualLocation.Container : (int)item.Container,
                 Int2 = useVisualLocation ? visualLocation.Slot : item.Slot,
+                ReferenceIndex = (short)absoluteIndex,
             },
             IsClickable = true,
             OnDiscard = node => OnDiscard(node, data),
@@ -271,7 +275,7 @@ public class InventoryCategoryNode : SimpleComponentNode
     private void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo targetItemInfo)
     {
         InventoryItem item = targetItemInfo.Item;
-        if (! payload.IsValidInventoryPayload)
+        if (!payload.IsValidInventoryPayload)
         {
             Services.Logger.Warning($"[OnPayload] Invalid payload type: {payload.Type}");
             return;
@@ -282,7 +286,7 @@ public class InventoryCategoryNode : SimpleComponentNode
 
         InventoryLocation sourceLocation = payload.InventoryLocation;
 
-        if (! sourceLocation.IsValid)
+        if (!sourceLocation.IsValid)
         {
             Services.Logger. Warning($"[OnPayload] Could not resolve source from payload");
             return;
