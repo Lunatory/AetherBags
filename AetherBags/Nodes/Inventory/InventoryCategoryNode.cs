@@ -36,6 +36,7 @@ public class InventoryCategoryNode : SimpleComponentNode
 
     public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
     public Action? OnRefreshRequested { get; set; }
+    public Action? OnDragEnd { get; set; }
 
     public InventoryCategoryNode()
     {
@@ -239,7 +240,7 @@ public class InventoryCategoryNode : SimpleComponentNode
             },
             IsClickable = true,
             OnDiscard = node => OnDiscard(node, data),
-            OnEnd = _ => System.AddonInventoryWindow.ManualInventoryRefresh(),
+            OnEnd = _ => OnDragEnd?.Invoke(),
             OnPayloadAccepted = (node, payload) => OnPayloadAccepted(node, payload, data),
             OnRollOver = node =>
             {
@@ -291,7 +292,6 @@ public class InventoryCategoryNode : SimpleComponentNode
         // Debug: log resolved locations
         Services.Logger.Debug($"[OnPayload] Source: {sourceLocation. Container} @ {sourceLocation. Slot}");
         Services.Logger.Debug($"[OnPayload] Target: {targetLocation.Container} @ {targetLocation.Slot}");
-
 
         if (sourceLocation.Container.IsSameContainerGroup(targetLocation.Container))
         {

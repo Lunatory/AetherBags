@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using AetherBags;
-using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
@@ -11,6 +9,8 @@ using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Nodes;
+
+namespace AetherBags.Addons;
 
 public abstract unsafe class InventoryAddonBase :  NativeAddon
 {
@@ -21,7 +21,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
     protected WrappingGridNode<InventoryCategoryNode> CategoriesNode = null!;
     protected TextInputWithHintNode SearchInputNode = null!;
     protected InventoryFooterNode FooterNode = null!;
-    protected TextNode?  SlotCounterNode { get; set; }
+    protected TextNode? SlotCounterNode { get; set; }
     protected CircleButtonNode SettingsButtonNode = null!;
 
     protected virtual float MinWindowWidth => 600;
@@ -37,6 +37,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
 
     protected bool RefreshQueued;
     protected bool RefreshAutosizeQueued;
+    private bool _isRefreshing;
 
     protected abstract InventoryStateBase InventoryState { get; }
 
@@ -44,11 +45,30 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
     protected virtual bool HasPinning => true;
     protected virtual bool HasSlotCounter => false;
 
-    public void ManualInventoryRefresh()
+    public void ManualRefresh()
     {
         if (!Services.ClientState.IsLoggedIn) return;
-        InventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize: true);
+        if (_isRefreshing) return;
+        try
+        {
+            _isRefreshing = true;
+            InventoryState.RefreshFromGame();
+            RefreshCategoriesCore(autosize: true);
+        }
+        finally
+        {
+            _isRefreshing = false;
+        }
+    }
+
+    protected virtual void RefreshAllInventoryWindows()
+    {
+        Services.Framework.RunOnTick(() =>
+        {
+            System.AddonInventoryWindow?.ManualRefresh();
+            System.AddonSaddleBagWindow?.ManualRefresh();
+            //AetherBags.System.AddonRetainerWindow?.ManualRefresh();
+        }, delayTicks: 2);
     }
 
     protected virtual void RefreshCategoriesCore(bool autosize)
@@ -79,8 +99,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         if (HasPinning)
         {
             bool pinsChanged = PinCoordinator.ApplyPinnedStates(CategoriesNode);
-            if (pinsChanged)
-                HoverCoordinator.ResetAll(CategoriesNode);
+            if (pinsChanged) HoverCoordinator.ResetAll(CategoriesNode);
         }
 
         WireHoverHandlers();
@@ -99,6 +118,8 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         return new InventoryCategoryNode
         {
             Size = ContentSize with { Y = 120 },
+            OnRefreshRequested = ManualRefresh,
+            OnDragEnd = RefreshAllInventoryWindows,
         };
     }
 

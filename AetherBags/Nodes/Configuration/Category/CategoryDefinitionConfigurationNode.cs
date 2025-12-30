@@ -342,7 +342,7 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
 
     private static void NotifyChanged()
     {
-        System.AddonInventoryWindow.ManualInventoryRefresh();
+        System.AddonInventoryWindow.ManualRefresh();
     }
 
     private void NotifyCategoryPropertyChanged()

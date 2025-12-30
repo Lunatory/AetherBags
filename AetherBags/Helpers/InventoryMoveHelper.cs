@@ -9,7 +9,7 @@ public static unsafe class InventoryMoveHelper
         Services.Logger.Debug($"[MoveItem] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
         InventoryManager.Instance()->MoveItemSlot(sourceContainer, sourceSlot, destContainer, destSlot, true);
         Services.Framework.DelayTicks(2);
-        Services.Framework.RunOnFrameworkThread(System.AddonInventoryWindow.ManualInventoryRefresh);
+        Services.Framework.RunOnFrameworkThread(System.AddonInventoryWindow.ManualRefresh);
     }
 
     /*

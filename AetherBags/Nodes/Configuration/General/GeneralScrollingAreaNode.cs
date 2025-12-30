@@ -30,5 +30,5 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
         ContentNode.AddNode(_debugCheckboxNode);
     }
 
-    private void RefreshInventory() => System.AddonInventoryWindow.ManualInventoryRefresh();
+    private void RefreshInventory() => System.AddonInventoryWindow.ManualRefresh();
 }

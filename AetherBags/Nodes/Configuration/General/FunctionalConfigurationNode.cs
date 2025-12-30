@@ -81,7 +81,7 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
                 if (Enum.TryParse<InventoryStackMode>(selected, out var parsed))
                 {
                     config.StackMode = parsed;
-                    System.AddonInventoryWindow.ManualInventoryRefresh();
+                    System.AddonInventoryWindow.ManualRefresh();
                 }
             }
         };

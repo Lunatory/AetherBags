@@ -33,7 +33,7 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
             OnValueUpdate = value =>
             {
                 config.CompactLookahead = value;
-                System.AddonInventoryWindow.ManualInventoryRefresh();
+                System.AddonInventoryWindow.ManualRefresh();
             }
         };
         CompactLookahead.AttachNode(this);

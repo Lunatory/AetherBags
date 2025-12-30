@@ -77,7 +77,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             .ToList();
     }
 
-    private void OnOptionChanged(CategoryWrapper?  newOption)
+    private void OnOptionChanged(CategoryWrapper? newOption)
     {
         if (_configNode is null) return;
 
@@ -118,7 +118,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         listNode.AddOption(newWrapper);
 
         RefreshSelectionList();
-        System.AddonInventoryWindow.ManualInventoryRefresh();
+        System.AddonInventoryWindow.ManualRefresh();
     }
 
     private void OnRemoveCategory(CategoryWrapper categoryWrapper)
@@ -134,7 +134,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         {
             OnOptionChanged(null);
         }
-        System.AddonInventoryWindow.ManualInventoryRefresh();
+        System.AddonInventoryWindow.ManualRefresh();
     }
 
     private void RefreshSelectionList()
