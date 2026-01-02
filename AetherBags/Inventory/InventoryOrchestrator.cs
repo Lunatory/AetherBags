@@ -34,6 +34,14 @@ public static unsafe class InventoryOrchestrator
         });
     }
 
+    public static void CloseAll()
+    {
+        foreach (var window in GetAllWindows())
+        {
+            window.Close();
+        }
+    }
+
     private static IEnumerable<IInventoryWindow> GetAllWindows()
     {
         yield return System.AddonInventoryWindow;

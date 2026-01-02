@@ -13,20 +13,24 @@ public sealed class GeneralScrollingAreaNode : ScrollingListNode
     {
         GeneralSettings config = System.Config.General;
 
+        new ImportExportResetNode().AttachNode(this);
+
         ItemSpacing = 32;
 
         AddNode(new FunctionalConfigurationNode());
 
         AddNode(new LayoutConfigurationNode());
 
-        _debugCheckboxNode = new CheckboxNode
+        AddNode(new CheckboxNode
         {
             Size = new Vector2(300, 20),
             IsVisible = true,
             String = "Debug Mode",
             IsChecked = config.DebugEnabled,
-            OnClick = isChecked => { config.DebugEnabled = isChecked; }
-        };
-        AddNode(_debugCheckboxNode);
+            OnClick = isChecked =>
+            {
+                config.DebugEnabled = isChecked;
+            }
+        });
     }
 }

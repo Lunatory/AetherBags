@@ -65,6 +65,7 @@ public abstract class InventoryStateBase
         bool userCategoriesEnabled = config.Categories.UserCategoriesEnabled && categoriesEnabled;
         bool gameCategoriesEnabled = config.Categories.GameCategoriesEnabled && categoriesEnabled;
         bool allaganCategoriesEnabled = config.Categories.AllaganToolsCategoriesEnabled && categoriesEnabled;
+        // TODO: Cache this when config changes
         var userCategories = config.Categories.UserCategories.Where(c => c.Enabled).ToList();
 
         if (userCategoriesEnabled && userCategories.Count > 0)
