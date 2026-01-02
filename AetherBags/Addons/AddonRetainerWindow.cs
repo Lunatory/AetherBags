@@ -1,11 +1,10 @@
+using System.Linq;
 using System.Numerics;
 using AetherBags.Inventory;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -31,6 +30,8 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
     protected override float MinWindowWidth => 400;
     protected override float MaxWindowWidth => 700;
 
+    private readonly string[] _retainerAddonNames = { "InventoryRetainer", "InventoryRetainerLarge" };
+
     protected override void OnSetup(AtkUnitBase* addon)
     {
         InitializeBackgroundDropTarget();
@@ -48,29 +49,19 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         };
         CategoriesNode.AttachNode(this);
 
-        var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
-
-        var header = addon->WindowHeaderCollisionNode;
-
-        float headerX = header->X;
-        float headerY = header->Y;
-        float headerW = header->Width;
-        float headerH = header->Height;
-
-        float x = headerX + (headerW - size.X) * 0.5f;
-        float y = headerY + (headerH - size.Y) * 0.5f;
+        var header = CalculateHeaderLayout(addon);
 
         SearchInputNode = new TextInputWithHintNode
         {
-            Position = new Vector2(x, y),
-            Size = size,
+            Position = header.SearchPosition,
+            Size = header.SearchSize,
             OnInputReceived = _ => RefreshCategoriesCore(autosize: false),
         };
         SearchInputNode.AttachNode(this);
 
         SettingsButtonNode = new CircleButtonNode
         {
-            Position = new Vector2(headerW - 48f, y),
+            Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY),
             Size = new Vector2(28f),
             Icon = ButtonIcon.GearCog,
             OnClick = System.AddonConfigurationWindow.Toggle
@@ -152,18 +143,23 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
             SlotCounterNode.Position = new Vector2(contentSize.X - 80f, footerY);
     }
 
-    protected override void OnUpdate(AtkUnitBase* addon)
+    private void CloseRetainerWindows()
     {
-        if (RefreshQueued)
+        var manager = RaptureAtkUnitManager.Instance();
+        foreach (var name in _retainerAddonNames)
         {
-            bool doAutosize = RefreshAutosizeQueued;
-            RefreshQueued = false;
-            RefreshAutosizeQueued = false;
-
-            RefreshCategoriesCore(doAutosize);
+            var addon = manager->GetAddonByName(name);
+            if (addon != null)
+            {
+                addon->IsVisible = true;
+                addon->Close(true);
+            }
         }
+    }
 
-        base.OnUpdate(addon);
+    private bool IsAnyRetainerWindowLoaded()
+    {
+        return _retainerAddonNames.Any(name => RaptureAtkUnitManager.Instance()->GetAddonByName(name) != null);
     }
 
     protected override void OnShow(AtkUnitBase* addon)
@@ -175,48 +171,16 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     private void OnEntrustDuplicates()
     {
-        // TODO: Implement checking if the retainer bag is def open
+        if (!IsAnyRetainerWindowLoaded()) return;
         var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.Retainer);
         agent->SendCommand(0, [0]);
-    }
-
-    protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
-    {
-        base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
-
-        _inventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize: true);
-    }
-
-    public void SetSearchText(string searchText)
-    {
-        Services.Framework.RunOnTick(() =>
-        {
-            if (IsOpen) SearchInputNode.SearchString = searchText;
-            RefreshCategoriesCore(autosize: true);
-        }, delayTicks: 1);
     }
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
         _isSetupComplete = false;
 
-        if (System.Config.General.HideGameRetainer)
-        {
-            var retainerAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryRetainer");
-            if (retainerAddon != null)
-            {
-                retainerAddon->IsVisible = true;
-                retainerAddon->Close(true);
-            }
-
-            retainerAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryRetainerLarge");
-            if (retainerAddon != null)
-            {
-                retainerAddon->IsVisible = true;
-                retainerAddon->Close(true);
-            }
-        }
+        CloseRetainerWindows();
 
         base.OnFinalize(addon);
     }

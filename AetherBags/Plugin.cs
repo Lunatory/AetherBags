@@ -16,11 +16,9 @@ namespace AetherBags;
 
 public unsafe class Plugin : IDalamudPlugin
 {
-    private static string HelpDescription => "Opens your inventory.";
-
     private readonly CommandHandler _commandHandler;
     private readonly InventoryHooks _inventoryHooks;
-    private readonly InventoryLifecycles inventoryLifecycles;
+    private readonly InventoryLifecycles _inventoryLifecycles;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
@@ -66,8 +64,6 @@ public unsafe class Plugin : IDalamudPlugin
 
         _commandHandler = new CommandHandler();
 
-        // Services.GameInventory.InventoryChanged += InventoryState.OnRawItemAdded;
-
         Services.ClientState.Login += OnLogin;
         Services.ClientState.Logout += OnLogout;
 
@@ -76,7 +72,7 @@ public unsafe class Plugin : IDalamudPlugin
         }
 
         _inventoryHooks = new InventoryHooks();
-        inventoryLifecycles = new InventoryLifecycles();
+        _inventoryLifecycles = new InventoryLifecycles();
     }
 
     public void Dispose()
@@ -96,7 +92,7 @@ public unsafe class Plugin : IDalamudPlugin
         KamiToolKitLibrary.Dispose();
 
         _inventoryHooks.Dispose();
-        inventoryLifecycles.Dispose();
+        _inventoryLifecycles.Dispose();
     }
 
     private void OnLogin()

@@ -4,8 +4,6 @@ using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -35,36 +33,26 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         };
         CategoriesNode.AttachNode(this);
 
-        var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
-
-        var header = addon->WindowHeaderCollisionNode;
-
-        float headerX = header->X;
-        float headerY = header->Y;
-        float headerW = header->Width;
-        float headerH = header->Height;
-
-        float x = headerX + (headerW - size.X) * 0.5f;
-        float y = headerY + (headerH - size.Y) * 0.5f;
+        var header = CalculateHeaderLayout(addon);
 
         _notificationNode = new InventoryNotificationNode
         {
             Position = new Vector2(WindowNode!.X - 4f, WindowNode!.Y - 32f),
-            Size = new Vector2(headerW, 28f),
+            Size = new Vector2(header.HeaderWidth, 28f),
         };
         _notificationNode.AttachNode(this);
 
         SearchInputNode = new TextInputWithHintNode
         {
-            Position = new Vector2(x, y),
-            Size = size,
+            Position = header.SearchPosition,
+            Size = header.SearchSize,
             OnInputReceived = _ => RefreshCategoriesCore(autosize: false),
         };
         SearchInputNode.AttachNode(this);
 
         SettingsButtonNode = new CircleButtonNode
         {
-            Position = new Vector2(headerW - 48f, y),
+            Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY),
             Size = new Vector2(28f),
             Icon = ButtonIcon.GearCog,
             OnClick = System.AddonConfigurationWindow.Toggle
@@ -90,32 +78,10 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         base.OnSetup(addon);
     }
 
-    protected override void OnUpdate(AtkUnitBase* addon)
-    {
-        if (RefreshQueued)
-        {
-            bool doAutosize = RefreshAutosizeQueued;
-            RefreshQueued = false;
-            RefreshAutosizeQueued = false;
-
-            RefreshCategoriesCore(doAutosize);
-        }
-
-        base.OnUpdate(addon);
-    }
-
     public void ManualCurrencyRefresh()
     {
         if (!Services.ClientState.IsLoggedIn) return;
         FooterNode.RefreshCurrencies();
-    }
-
-    protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
-    {
-        base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
-
-        _inventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize: true);
     }
 
     public void SetNotification(InventoryNotificationInfo info)
@@ -123,15 +89,6 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         Services.Framework.RunOnTick(() =>
         {
             if (IsOpen) _notificationNode.NotificationInfo = info;
-        }, delayTicks: 1);
-    }
-
-    public void SetSearchText(string searchText)
-    {
-        Services.Framework.RunOnTick(() =>
-        {
-            if (IsOpen) SearchInputNode.SearchString = searchText;
-            RefreshCategoriesCore(autosize: true);
         }, delayTicks: 1);
     }
 

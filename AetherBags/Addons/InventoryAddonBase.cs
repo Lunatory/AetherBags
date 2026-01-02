@@ -18,7 +18,7 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
 
-public abstract unsafe class InventoryAddonBase :  NativeAddon
+public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 {
     protected readonly InventoryCategoryHoverCoordinator HoverCoordinator = new();
     protected readonly InventoryCategoryPinCoordinator PinCoordinator = new();
@@ -41,6 +41,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
     protected const float ItemPadding = 4;
     protected const float FooterHeight = 28f;
     protected const float FooterTopSpacing = 4f;
+    protected const float SettingsButtonOffset = 48f;
 
     protected bool RefreshQueued;
     protected bool RefreshAutosizeQueued;
@@ -70,6 +71,15 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         {
             _isRefreshing = false;
         }
+    }
+
+    public virtual void SetSearchText(string searchText)
+    {
+        Services.Framework.RunOnTick(() =>
+        {
+            if (IsOpen) SearchInputNode.SearchString = searchText;
+            RefreshCategoriesCore(autosize: true);
+        }, delayTicks: 1);
     }
 
     public void RefreshFromLifecycle()
@@ -133,6 +143,34 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
             LayoutContent();
             CategoriesNode.RecalculateLayout();
         }
+    }
+
+    protected readonly struct HeaderLayout
+    {
+        public Vector2 SearchPosition { get; init; }
+        public Vector2 SearchSize { get; init; }
+        public float HeaderWidth { get; init; }
+        public float HeaderY { get; init; }
+    }
+
+    protected HeaderLayout CalculateHeaderLayout(AtkUnitBase* addon)
+    {
+        var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
+        var header = addon->WindowHeaderCollisionNode;
+
+        float headerW = header->Width;
+        float headerH = header->Height;
+
+        float x = header->X + (headerW - size.X) * 0.5f;
+        float y = header->Y + (headerH - size.Y) * 0.5f;
+
+        return new HeaderLayout
+        {
+            SearchPosition = new Vector2(x, y),
+            SearchSize = size,
+            HeaderWidth = headerW,
+            HeaderY = y,
+        };
     }
 
     protected void InitializeBackgroundDropTarget()
@@ -305,6 +343,28 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
 
     protected void ResizeWindow(float width, float height)
         => ResizeWindow(width, height, recalcLayout: true);
+
+    protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
+    {
+        base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
+
+        InventoryState.RefreshFromGame();
+        RefreshCategoriesCore(autosize: true);
+    }
+
+    protected override void OnUpdate(AtkUnitBase* addon)
+    {
+        if (RefreshQueued)
+        {
+            bool doAutosize = RefreshAutosizeQueued;
+            RefreshQueued = false;
+            RefreshAutosizeQueued = false;
+
+            RefreshCategoriesCore(doAutosize);
+        }
+
+        base.OnUpdate(addon);
+    }
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {

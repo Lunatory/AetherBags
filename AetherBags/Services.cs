@@ -21,7 +21,6 @@ public class Services
     [PluginService] public static IPluginLog Logger { get; private set; } = null!;
     [PluginService] public static INotificationManager NotificationManager { get; private set; } = null!;
     [PluginService] public static IObjectTable ObjectTable { get; private set; } = null!;
-    // TODO: Remove cause temp
     [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
     [PluginService] public static IGameInteropProvider GameInteropProvider { get; private set; } = null!;
 }

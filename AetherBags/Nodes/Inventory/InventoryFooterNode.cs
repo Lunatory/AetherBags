@@ -25,7 +25,7 @@ public sealed class InventoryFooterNode : SimpleComponentNode
             FontType = FontType.MiedingerMed,
             TextFlags = TextFlags.Glare,
             TextColor = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(32) // Could also be Color 65
+            TextOutlineColor = ColorHelper.GetColor(32)
         };
         _slotAmountTextNode.AttachNode(this);
 

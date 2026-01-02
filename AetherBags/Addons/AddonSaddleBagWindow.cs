@@ -42,29 +42,19 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
         };
         CategoriesNode.AttachNode(this);
 
-        var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
-
-        var header = addon->WindowHeaderCollisionNode;
-
-        float headerX = header->X;
-        float headerY = header->Y;
-        float headerW = header->Width;
-        float headerH = header->Height;
-
-        float x = headerX + (headerW - size.X) * 0.5f;
-        float y = headerY + (headerH - size.Y) * 0.5f;
+        var header = CalculateHeaderLayout(addon);
 
         SearchInputNode = new TextInputWithHintNode
         {
-            Position = new Vector2(x, y),
-            Size = size,
+            Position = header.SearchPosition,
+            Size = header.SearchSize,
             OnInputReceived = _ => RefreshCategoriesCore(autosize: false),
         };
         SearchInputNode.AttachNode(this);
 
         SettingsButtonNode = new CircleButtonNode
         {
-            Position = new Vector2(headerW - 48f, y),
+            Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY),
             Size = new Vector2(28f),
             AddColor = _tintColor,
             Icon = ButtonIcon.GearCog,
@@ -80,7 +70,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
             FontType = FontType.MiedingerMed,
             TextFlags = TextFlags.Glare,
             TextColor = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(32) // Could also be Color 65
+            TextOutlineColor = ColorHelper.GetColor(32)
         };
         _slotCounterNode.AttachNode(this);
         SlotCounterNode = _slotCounterNode;
@@ -104,37 +94,6 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
         _slotCounterNode.String = _inventoryState.GetEmptySlotsString();
 
         base.RefreshCategoriesCore(autosize);
-    }
-
-    protected override void OnUpdate(AtkUnitBase* addon)
-    {
-        if (RefreshQueued)
-        {
-            bool doAutosize = RefreshAutosizeQueued;
-            RefreshQueued = false;
-            RefreshAutosizeQueued = false;
-
-            RefreshCategoriesCore(doAutosize);
-        }
-
-        base.OnUpdate(addon);
-    }
-
-    protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
-    {
-        base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
-
-        _inventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize: true);
-    }
-
-    public void SetSearchText(string searchText)
-    {
-        Services.Framework.RunOnTick(() =>
-        {
-            if (IsOpen) SearchInputNode.SearchString = searchText;
-            RefreshCategoriesCore(autosize: true);
-        }, delayTicks: 1);
     }
 
     protected override void OnFinalize(AtkUnitBase* addon)
