@@ -37,8 +37,6 @@ public class AddonConfigurationWindow : NativeAddon
         {
             Position = ContentStartPosition with { Y = tabContentY },
             Size = ContentSize with { Y = tabContentHeight },
-            ContentHeight = 400,
-            ScrollSpeed = 25,
             IsVisible = true,
         };
         _generalScrollingAreaNode.AttachNode(this);
@@ -47,8 +45,6 @@ public class AddonConfigurationWindow : NativeAddon
         {
             Position = ContentStartPosition with { Y = tabContentY },
             Size = ContentSize with { Y = tabContentHeight },
-            ContentHeight = 400,
-            ScrollSpeed = 25,
             IsVisible = false,
         };
         _categoryScrollingAreaNode.AttachNode(this);
@@ -57,8 +53,6 @@ public class AddonConfigurationWindow : NativeAddon
         {
             Position = ContentStartPosition with { Y = tabContentY },
             Size = ContentSize with { Y = tabContentHeight },
-            ContentHeight = 400,
-            ScrollSpeed = 25,
             IsVisible = false,
         };
         _currencyScrollingAreaNode.AttachNode(this);

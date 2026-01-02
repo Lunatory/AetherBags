@@ -4,7 +4,7 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
-public sealed class CategoryScrollingAreaNode : ScrollingAreaNode<VerticalListNode>
+public sealed class CategoryScrollingAreaNode : ScrollingListNode
 {
     private AddonCategoryConfigurationWindow? _categoryConfigurationAddon;
     private readonly TextButtonNode _categoryConfigurationButtonNode;
@@ -13,7 +13,7 @@ public sealed class CategoryScrollingAreaNode : ScrollingAreaNode<VerticalListNo
     {
         InitializeCategoryAddon();
 
-        ContentNode.AddNode(new CategoryGeneralConfigurationNode());
+        AddNode(new CategoryGeneralConfigurationNode());
 
         _categoryConfigurationButtonNode = new TextButtonNode
         {
@@ -21,7 +21,7 @@ public sealed class CategoryScrollingAreaNode : ScrollingAreaNode<VerticalListNo
             String = "Configure Categories",
             OnClick = () => _categoryConfigurationAddon?.Toggle(),
         };
-        ContentNode.AddNode(_categoryConfigurationButtonNode);
+        AddNode(_categoryConfigurationButtonNode);
     }
 
     private void InitializeCategoryAddon() {

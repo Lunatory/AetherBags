@@ -5,7 +5,7 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.General;
 
-public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNode>
+public sealed class GeneralScrollingAreaNode : ScrollingListNode
 {
     private readonly CheckboxNode _debugCheckboxNode = null!;
 
@@ -13,11 +13,11 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
     {
         GeneralSettings config = System.Config.General;
 
-        ContentNode.ItemSpacing = 32;
+        ItemSpacing = 32;
 
-        ContentNode.AddNode(new FunctionalConfigurationNode());
+        AddNode(new FunctionalConfigurationNode());
 
-        ContentNode.AddNode(new LayoutConfigurationNode());
+        AddNode(new LayoutConfigurationNode());
 
         _debugCheckboxNode = new CheckboxNode
         {
@@ -27,6 +27,6 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
             IsChecked = config.DebugEnabled,
             OnClick = isChecked => { config.DebugEnabled = isChecked; }
         };
-        ContentNode.AddNode(_debugCheckboxNode);
+        AddNode(_debugCheckboxNode);
     }
 }

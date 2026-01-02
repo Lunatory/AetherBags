@@ -7,19 +7,18 @@ namespace AetherBags.Nodes.Configuration.Category;
 
 public class CategoryConfigurationNode :  ConfigNode<CategoryWrapper>
 {
-    private readonly ScrollingAreaNode<VerticalListNode> _categoryList;
+    private readonly ScrollingListNode _categoryList;
     private CategoryDefinitionConfigurationNode? _activeNode;
 
     public Action? OnCategoryChanged { get; set; }
 
     public CategoryConfigurationNode()
     {
-        _categoryList = new ScrollingAreaNode<VerticalListNode>
+        _categoryList = new ScrollingListNode
         {
-            ContentHeight = 100.0f,
-            AutoHideScrollBar = true,
+            AutoHideScrollbar = true,
         };
-        _categoryList.ContentNode.FitContents = true;
+        _categoryList.FitContents = true;
         _categoryList.AttachNode(this);
     }
 
@@ -37,11 +36,11 @@ public class CategoryConfigurationNode :  ConfigNode<CategoryWrapper>
         {
             _activeNode = new CategoryDefinitionConfigurationNode(option.CategoryDefinition)
             {
-                Size = _categoryList.ContentNode.Size,
+                Size = _categoryList.Size,
                 OnLayoutChanged = UpdateScrollHeight,
                 OnCategoryPropertyChanged = OnCategoryChanged,
             };
-            _categoryList.ContentNode.AddNode(_activeNode);
+            _categoryList.AddNode(_activeNode);
         }
         else
         {
@@ -53,17 +52,17 @@ public class CategoryConfigurationNode :  ConfigNode<CategoryWrapper>
 
     private void UpdateScrollHeight()
     {
-        _categoryList.ContentNode.RecalculateLayout();
-        _categoryList.ContentHeight = _categoryList.ContentNode.Height;
+        _categoryList.RecalculateLayout();
+        //_categoryList.ContentHeight = _categoryList.Height;
     }
 
     protected override void OnSizeChanged()
     {
         base.OnSizeChanged();
         _categoryList.Size = Size;
-        _categoryList.ContentNode.Width = Width;
+        _categoryList.Width = Width;
 
-        foreach (var node in _categoryList.ContentNode.GetNodes<CategoryDefinitionConfigurationNode>())
+        foreach (var node in _categoryList.GetNodes<CategoryDefinitionConfigurationNode>())
         {
             node.Width = Width;
         }
