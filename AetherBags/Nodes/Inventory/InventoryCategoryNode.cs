@@ -288,8 +288,8 @@ public class InventoryCategoryNode : SimpleComponentNode
                 ReferenceIndex = (short)(targetItemInfo.Item.Container.GetInventoryStartIndex + targetItemInfo.VisualLocation.Slot)
             };
 
-            Services.Logger.Debug($"[OnPayload] ACCEPTED payload: Type={acceptedPayload.Type} Int1={acceptedPayload.Int1} Int2={acceptedPayload.Int2} Ref={acceptedPayload.ReferenceIndex}");
-            Services.Logger.Debug($"[OnPayload] NODE payload: Type={nodePayload.Type} Int1={nodePayload.Int1} Int2={nodePayload.Int2} Ref={nodePayload.ReferenceIndex}");
+            Services.Logger.DebugOnly($"[OnPayload] ACCEPTED payload: Type={acceptedPayload.Type} Int1={acceptedPayload.Int1} Int2={acceptedPayload.Int2} Ref={acceptedPayload.ReferenceIndex}");
+            Services.Logger.DebugOnly($"[OnPayload] NODE payload: Type={nodePayload.Type} Int1={nodePayload.Int1} Int2={nodePayload.Int2} Ref={nodePayload.ReferenceIndex}");
 
             if (!acceptedPayload.IsValidInventoryPayload || !nodePayload.IsValidInventoryPayload)
             {

@@ -12,7 +12,7 @@ public static unsafe class InventoryMoveHelper
 {
     public static void MoveItem(InventoryType sourceContainer, ushort sourceSlot, InventoryType destContainer, ushort destSlot)
     {
-        Services.Logger.Debug($"[MoveItem] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
+        Services.Logger.DebugOnly($"[MoveItem] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
         InventoryManager.Instance()->MoveItemSlot(sourceContainer, sourceSlot, destContainer, destSlot, true);
         Services.Framework.DelayTicks(2);
         Services.Framework.RunOnFrameworkThread(System.AddonInventoryWindow.ManualRefresh);
@@ -31,7 +31,7 @@ public static unsafe class InventoryMoveHelper
 
         if (srcContainer == 0 || dstContainer == 0) return;
 
-        Services.Logger.Debug($"[MoveItemViaAgent] {srcContainer}:{srcSlot}:{srcRi} -> {dstContainer}:{dstSlot}:{dstRi}");
+        Services.Logger.DebugOnly($"[MoveItemViaAgent] {srcContainer}:{srcSlot}:{srcRi} -> {dstContainer}:{dstSlot}:{dstRi}");
 
         var atkValues = stackalloc AtkValue[4];
         for (var i = 0; i < 4; i++)

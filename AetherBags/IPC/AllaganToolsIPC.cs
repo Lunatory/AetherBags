@@ -62,7 +62,7 @@ public class AllaganToolsIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.Debug($"Allagan Tools not available: {ex.Message}");
+            Services.Logger.DebugOnly($"Allagan Tools not available: {ex.Message}");
             IsReady = false;
         }
     }
@@ -117,7 +117,7 @@ public class AllaganToolsIPC : IDisposable
                 }
             }
 
-            Services.Logger.Debug($"Refreshed {CachedSearchFilters.Count} Allagan Tools filters, {ItemToFilters.Count} unique items");
+            Services.Logger.DebugOnly($"Refreshed {CachedSearchFilters.Count} Allagan Tools filters, {ItemToFilters.Count} unique items");
             OnFiltersRefreshed?.Invoke();
         }
         catch (Exception ex)

@@ -125,7 +125,7 @@ public class InventoryLifecycles : IDisposable
 
         GeneralSettings config = System.Config.General;
 
-        Services.Logger.Debug("PreRefresh event for Inventory detected");
+        Services.Logger.DebugOnly("PreRefresh event for Inventory detected");
 
         AtkValuePtr[] atkValues = refreshArgs.AtkValueEnumerable.ToArray();
 

@@ -25,7 +25,7 @@ public class WotsItIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.Debug($"WotsIt not available: {ex.Message}");
+            Services.Logger.DebugOnly($"WotsIt not available: {ex.Message}");
         }
     }
 
@@ -44,7 +44,7 @@ public class WotsItIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.Debug($"Failed to register with WotsIt: {ex.Message}");
+            Services.Logger.DebugOnly($"Failed to register with WotsIt: {ex.Message}");
         }
     }
 

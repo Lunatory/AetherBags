@@ -228,7 +228,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             ReferenceIndex = (short)absoluteIndex
         };
 
-        Services.Logger.Debug($"[BackgroundDrop] Target: {emptyLocation} -> Visual: {visualLocation} (Ref: {absoluteIndex})");
+        Services.Logger.DebugOnly($"[BackgroundDrop] Target: {emptyLocation} -> Visual: {visualLocation} (Ref: {absoluteIndex})");
 
         InventoryMoveHelper.HandleItemMovePayload(acceptedPayload, targetPayload);
 
