@@ -7,8 +7,6 @@ namespace AetherBags.Nodes.Configuration.General;
 
 public sealed class GeneralScrollingAreaNode : ScrollingListNode
 {
-    private readonly CheckboxNode _debugCheckboxNode = null!;
-
     public GeneralScrollingAreaNode()
     {
         GeneralSettings config = System.Config.General;

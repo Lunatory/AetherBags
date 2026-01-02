@@ -6,5 +6,6 @@ public interface IInventoryWindow
     void Toggle();
     void Close();
     void ManualRefresh();
+    void ItemRefresh();
     void SetSearchText(string searchText);
 }

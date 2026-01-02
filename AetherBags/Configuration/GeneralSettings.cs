@@ -3,6 +3,7 @@ namespace AetherBags.Configuration;
 public class GeneralSettings
 {
     public InventoryStackMode StackMode { get; set; } = InventoryStackMode.AggregateByItemId;
+    public SearchMode SearchMode { get; set; } = SearchMode.Highlight;
     public bool DebugEnabled { get; set; } = false;
     public bool CompactPackingEnabled { get; set; } = true;
     public int CompactLookahead { get; set; } = 24;
@@ -22,4 +23,10 @@ public enum InventoryStackMode : byte
 {
     NaturalStacks = 0,
     AggregateByItemId = 1,
+}
+
+public enum SearchMode : byte
+{
+    Filter = 0,
+    Highlight = 1,
 }

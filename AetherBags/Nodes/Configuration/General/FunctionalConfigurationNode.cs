@@ -132,6 +132,24 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
         };
         AddNode(linkItemCheckBox);
 
+        var searchModeDropDown = new LabeledDropdownNode
+        {
+            Size = new Vector2(300, 20),
+            LabelText = "Search Mode",
+            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
+            Options = Enum.GetNames(typeof(SearchMode)).ToList(),
+            SelectedOption = config.SearchMode.ToString(),
+            OnOptionSelected = selected =>
+            {
+                if (Enum.TryParse<SearchMode>(selected, out var parsed))
+                {
+                    config.SearchMode = parsed;
+                    InventoryOrchestrator.RefreshAll(updateMaps: false);
+                }
+            }
+        };
+        AddNode(searchModeDropDown);
+
         _stackDropDown = new LabeledDropdownNode
         {
             Size = new Vector2(300, 20),

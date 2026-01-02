@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Categories;
+using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
 using AetherBags.Inventory.Scanning;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -76,8 +77,19 @@ public abstract class InventoryStateBase
 
         if (allaganCategoriesEnabled)
         {
-            CategoryBucketManager.BucketByAllaganFilters(
-                ItemInfoByKey, BucketsByKey, ClaimedKeys, allaganCategoriesEnabled);
+            if (config.Categories.AllaganToolsMode == AllaganToolsFilterMode.Categorize)
+            {
+                CategoryBucketManager.BucketByAllaganFilters(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
+                HighlightState.ClearFilter(HighlightSource.AllaganTools);
+            }
+            else
+            {
+                UpdateAllaganHighlight(HighlightState.SelectedAllaganToolsFilterKey);
+            }
+        }
+        else
+        {
+            HighlightState.ClearFilter(HighlightSource.AllaganTools);
         }
 
         if (gameCategoriesEnabled)
@@ -89,6 +101,25 @@ public abstract class InventoryStateBase
         {
             CategoryBucketManager.BucketUnclaimedToMisc(
                 ItemInfoByKey, BucketsByKey, ClaimedKeys, userCategoriesEnabled);
+        }
+    }
+
+    private void UpdateAllaganHighlight(string? filterKey)
+    {
+        if (string.IsNullOrEmpty(filterKey) || !System.IPC.AllaganTools.IsReady)
+        {
+            HighlightState.ClearFilter(HighlightSource.AllaganTools);
+            return;
+        }
+
+        var filterItems = System.IPC.AllaganTools.GetFilterItems(filterKey);
+        if (filterItems != null)
+        {
+            HighlightState.SetFilter(HighlightSource.AllaganTools, filterItems.Keys);
+        }
+        else
+        {
+            HighlightState.ClearFilter(HighlightSource.AllaganTools);
         }
     }
 

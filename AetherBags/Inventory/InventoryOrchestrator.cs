@@ -42,6 +42,17 @@ public static unsafe class InventoryOrchestrator
         }
     }
 
+    public static void RefreshHighlights()
+    {
+        Services.Framework.RunOnTick(() =>
+        {
+            foreach (var window in GetAllWindows())
+            {
+                window.ItemRefresh();
+            }
+        });
+    }
+
     private static IEnumerable<IInventoryWindow> GetAllWindows()
     {
         yield return System.AddonInventoryWindow;

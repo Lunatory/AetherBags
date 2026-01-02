@@ -44,11 +44,12 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         var header = CalculateHeaderLayout(addon);
 
-        SearchInputNode = new TextInputWithHintNode
+        SearchInputNode = new TextInputWithButtonNode
         {
             Position = header.SearchPosition,
             Size = header.SearchSize,
-            OnInputReceived = _ => RefreshCategoriesCore(autosize: false),
+            OnInputReceived = _ => ItemRefresh(),
+            OnButtonClicked = () => InventoryAddonContextMenu.OpenMain(this)
         };
         SearchInputNode.AttachNode(this);
 

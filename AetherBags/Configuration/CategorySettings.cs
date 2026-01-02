@@ -11,7 +11,9 @@ public class CategorySettings
     public bool CategoriesEnabled { get; set; } = true;
     public bool GameCategoriesEnabled { get; set; } = true;
     public bool UserCategoriesEnabled { get; set; } = true;
+    public bool BisBuddyEnabled { get; set; } = true;
     public bool AllaganToolsCategoriesEnabled { get; set; } = false;
+    public AllaganToolsFilterMode AllaganToolsMode { get; set; } = AllaganToolsFilterMode.Highlight;
 
     public List<UserCategoryDefinition> UserCategories { get; set; } = new();
 }
@@ -77,4 +79,10 @@ public enum ToggleFilterState
     Ignored = 0,
     Allow = 1,
     Disallow = 2,
+}
+
+public enum AllaganToolsFilterMode
+{
+    Categorize = 0,
+    Highlight = 1,
 }

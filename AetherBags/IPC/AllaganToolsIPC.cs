@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using AetherBags.Inventory;
+using AetherBags.Inventory.Context;
 using Dalamud.Plugin.Ipc;
 
 namespace AetherBags.IPC;
@@ -46,7 +48,6 @@ public class AllaganToolsIPC : IDisposable
 
             _initialized.Subscribe(OnAllaganInitialized);
 
-            // Check if already initialized
             try
             {
                 IsReady = _isInitialized.InvokeFunc();
@@ -179,6 +180,12 @@ public class AllaganToolsIPC : IDisposable
             Services.Logger.Warning($"GetSearchFilters failed: {ex.Message}");
             return null;
         }
+    }
+
+    public void SelectFilter(string filterKey)
+    {
+        HighlightState.SelectedAllaganToolsFilterKey = filterKey;
+        InventoryOrchestrator.RefreshHighlights();
     }
 
     public void Dispose()

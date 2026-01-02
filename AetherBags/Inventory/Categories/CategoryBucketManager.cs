@@ -165,7 +165,7 @@ public static class CategoryBucketManager
         bool allaganCategoriesEnabled)
     {
         if (!allaganCategoriesEnabled) return;
-        if (! System.IPC.AllaganTools.IsReady) return;
+        if (!System.IPC.AllaganTools.IsReady) return;
 
         var filters = System.IPC.AllaganTools.CachedSearchFilters;
         var filterItems = System.IPC.AllaganTools.CachedFilterItems;

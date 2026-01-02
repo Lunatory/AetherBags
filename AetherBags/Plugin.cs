@@ -24,10 +24,11 @@ public unsafe class Plugin : IDalamudPlugin
     {
         pluginInterface.Create<Services>();
 
+        System.Config = Util.LoadConfigOrDefault();
+
         BackupHelper.DoConfigBackup(pluginInterface);
 
         KamiToolKitLibrary.Initialize(pluginInterface);
-        System.Config = Util.LoadConfigOrDefault();
 
         System.IPC = new IPCService();
 

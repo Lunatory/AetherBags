@@ -14,8 +14,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
-// TODO: Switch back to CS version when Dalamud Updated
-
 namespace AetherBags.Nodes.Inventory;
 
 public class InventoryCategoryNode : SimpleComponentNode
@@ -237,17 +235,15 @@ public class InventoryCategoryNode : SimpleComponentNode
             ReferenceIndex = (short)absoluteIndex
         };
 
-        bool isSlotBlocked = item.Container.IsMainInventory && data.IsSlotBlocked;
-        float alpha = !isSlotBlocked && data.IsEligibleForContext ? 1.0f : 0.4f;
-
         return new InventoryDragDropNode
         {
             Size = new Vector2(42, 46),
-            Alpha = alpha,
+            Alpha = data.VisualAlpha,
+            AddColor = data.HighlightOverlayColor,
+            IsDraggable = !data.IsSlotBlocked,
             IsVisible = true,
             IconId = item.IconId,
             AcceptedType = DragDropType.Item,
-            IsDraggable = !data.IsSlotBlocked,
             Payload = nodePayload,
             IsClickable = true,
             OnDiscard = node => OnDiscard(node, data),
@@ -267,6 +263,18 @@ public class InventoryCategoryNode : SimpleComponentNode
             },
             ItemInfo = data
         };
+    }
+
+    public void RefreshNodeVisuals()
+    {
+        foreach (var node in _itemGridNode.Nodes)
+        {
+            if (node is not InventoryDragDropNode itemNode || itemNode.ItemInfo == null) continue;
+
+            itemNode.Alpha = itemNode.ItemInfo.VisualAlpha;
+            itemNode.AddColor = itemNode.ItemInfo.HighlightOverlayColor;
+            itemNode.IsDraggable = !itemNode.ItemInfo.IsSlotBlocked;
+        }
     }
 
     private unsafe void OnDiscard(DragDropNode node, ItemInfo item)
@@ -299,7 +307,7 @@ public class InventoryCategoryNode : SimpleComponentNode
 
             if (acceptedPayload.IsSameBaseContainer(nodePayload))
             {
-                Services.Logger.Information("[OnPayload] Source and target are in the same base container, skipping move.");
+                Services.Logger.DebugOnly("[OnPayload] Source and target are in the same base container, skipping move.");
                 node.IconId = targetItemInfo.IconId;
                 node.Payload = nodePayload;
                 return;

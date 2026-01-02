@@ -1,7 +1,12 @@
+using System;
+using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Context;
 using AetherBags.Nodes.Color;
+using AetherBags.Nodes.Input;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
@@ -71,7 +76,47 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
         };
         AddNode(userCategoriesEnabled);
 
+        bool bisBuddyReady = System.IPC.BisBuddy?.IsReady ?? false;
+
+        CheckboxNode bisBuddyEnabled = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = bisBuddyReady ? "BISBuddy" : "BISBuddy (Not Available)",
+            IsChecked = config.BisBuddyEnabled,
+            TextTooltip = "Allow BISBuddy to highlight items.",
+            OnClick = isChecked =>
+            {
+                config.BisBuddyEnabled = isChecked;
+                System.IPC.BisBuddy?.RequestUpdate();
+                RefreshInventory();
+            }
+        };
+        AddNode(bisBuddyEnabled);
+
         bool allaganReady = System.IPC.AllaganTools?.IsReady ?? false;
+
+        LabeledDropdownNode? atModeDropdown = new LabeledDropdownNode
+        {
+            Size = new Vector2(300, 20),
+            LabelText = "Filter Display Mode",
+            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
+            IsEnabled = config.AllaganToolsCategoriesEnabled && allaganReady,
+            Options = Enum.GetNames(typeof(AllaganToolsFilterMode)).ToList(),
+            SelectedOption = config.AllaganToolsMode.ToString(),
+            OnOptionSelected = selected =>
+            {
+                if (Enum.TryParse<AllaganToolsFilterMode>(selected, out var parsed))
+                {
+                    config.AllaganToolsMode = parsed;
+                    if (parsed == AllaganToolsFilterMode.Categorize)
+                        HighlightState.ClearFilter(HighlightSource.AllaganTools);
+
+                    RefreshInventory();
+                }
+            }
+        };
+
         _allaganToolsCheckbox = new CheckboxNode
         {
             Size = Size with { Y = 18 },
@@ -85,14 +130,16 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             OnClick = isChecked =>
             {
                 config.AllaganToolsCategoriesEnabled = isChecked;
-                if (isChecked)
-                {
-                    System.IPC?.AllaganTools?.RefreshFilters();
-                }
+                if (atModeDropdown != null) atModeDropdown.IsEnabled = isChecked;
+                if (isChecked) System.IPC?.AllaganTools?.RefreshFilters();
                 RefreshInventory();
             }
         };
         AddNode(_allaganToolsCheckbox);
+
+        AddTab(1);
+        AddNode(atModeDropdown);
+        SubtractTab(1);
     }
 
     private void RefreshInventory() => InventoryOrchestrator.RefreshAll(updateMaps: true);

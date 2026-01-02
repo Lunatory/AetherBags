@@ -82,36 +82,53 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     {
         get
         {
-            uint contextId = InventoryContextState.ActiveContextId;
-            if (contextId == 0) return true;
-
-            bool isRetainerContext = contextId == 4;
-            bool isSaddlebagContext = contextId == 29;
-            bool isMainContext = !isRetainerContext && isSaddlebagContext == false;
-
-            if (IsMainInventory)
-            {
-                if (!isMainContext) return true;
-
-                return InventoryContextState.IsEligible(InventoryPage, Item.Slot);
-            }
-
-            if (Item.Container.IsRetainer)
-            {
-                // ...but the context isn't for Retainers, don't dim it.
-                if (!isRetainerContext)
-                    return true;
-            }
-
-            // 3. If we are looking at a Saddlebag item...
-            if (Item.Container.IsSaddleBag)
-            {
-                if (!isSaddlebagContext)
-                    return true;
-            }
+            if (IsSlotBlocked) return false;
+            if (!CheckNativeContextEligibility()) return false;
+            if (!HighlightState.IsInActiveFilters(Item.ItemId)) return false;
 
             return true;
         }
+    }
+
+    public float VisualAlpha => IsEligibleForContext ? 1.0f : 0.4f;
+
+    public Vector3 HighlightOverlayColor
+    {
+        get
+        {
+            if (!System.Config.Categories.BisBuddyEnabled)
+                return Vector3.Zero;
+
+            return HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero;
+        }
+    }
+
+    private bool CheckNativeContextEligibility()
+    {
+        uint contextId = InventoryContextState.ActiveContextId;
+        if (contextId == 0) return true;
+
+        bool isRetainerContext = contextId == 4;
+        bool isSaddlebagContext = contextId == 29;
+        bool isMainContext = !isRetainerContext && isSaddlebagContext == false;
+
+        if (IsMainInventory)
+        {
+            if (!isMainContext) return true;
+            return InventoryContextState.IsEligible(InventoryPage, Item.Slot);
+        }
+
+        if (Item.Container.IsRetainer)
+        {
+            if (!isRetainerContext) return true;
+        }
+
+        if (Item.Container.IsSaddleBag)
+        {
+            if (!isSaddlebagContext) return true;
+        }
+
+        return true;
     }
 
     public bool IsMainInventory => InventoryPage >= 0;

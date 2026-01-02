@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
@@ -14,6 +15,7 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
+using KamiToolKit.Classes.ContextMenu;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
@@ -26,10 +28,12 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected DragDropNode BackgroundDropTarget = null!;
     protected WrappingGridNode<InventoryCategoryNode> CategoriesNode = null!;
-    protected TextInputWithHintNode SearchInputNode = null!;
+    protected TextInputWithButtonNode SearchInputNode = null!;
     protected InventoryFooterNode FooterNode = null!;
     protected TextNode? SlotCounterNode { get; set; }
     protected CircleButtonNode SettingsButtonNode = null!;
+
+    internal ContextMenu ContextMenu = null!;
 
     protected virtual float MinWindowWidth => 600;
     protected virtual float MaxWindowWidth => 800;
@@ -54,6 +58,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected virtual bool HasPinning => true;
     protected virtual bool HasSlotCounter => false;
 
+    private readonly HashSet<uint> _searchMatchScratch = new();
+
     public void ManualRefresh()
     {
         if (!IsOpen) return;
@@ -72,6 +78,9 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             _isRefreshing = false;
         }
     }
+
+
+    public string GetSearchText() => SearchInputNode?.SearchString.ExtractText() ?? string.Empty;
 
     public virtual void SetSearchText(string searchText)
     {
@@ -105,14 +114,52 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         if (!_isSetupComplete)
             return;
 
+        var config = System.Config.General;
+        string searchText = SearchInputNode.SearchString.ExtractText();
+        bool isSearching = !string.IsNullOrWhiteSpace(searchText);
+
+        if (config.SearchMode == SearchMode.Highlight && isSearching)
+        {
+            _searchMatchScratch.Clear();
+            var allData = InventoryState.GetCategories(string.Empty);
+
+            for (int i = 0; i < allData.Count; i++)
+            {
+                var cat = allData[i];
+                for (int j = 0; j < cat.Items.Count; j++)
+                {
+                    var item = cat.Items[j];
+                    if (item.IsRegexMatch(searchText))
+                    {
+                        _searchMatchScratch.Add(item.Item.ItemId);
+                    }
+                }
+            }
+            HighlightState.SetFilter(HighlightSource.Search, _searchMatchScratch);
+        }
+        else
+        {
+            HighlightState.ClearFilter(HighlightSource.Search);
+        }
+
+        if (SearchInputNode != null)
+        {
+            bool atActive = !string.IsNullOrEmpty(HighlightState.SelectedAllaganToolsFilterKey);
+            bool filterModeActive = System.Config.General.SearchMode == SearchMode.Filter;
+
+            SearchInputNode.HintAddColor = (atActive || filterModeActive)
+                ? new Vector3(0.0f, 0.3f, 0.3f)
+                : Vector3.Zero;
+        }
+
         if (HasFooter)
         {
             FooterNode.SlotAmountText = InventoryState.GetEmptySlotsString();
             FooterNode.RefreshCurrencies();
         }
 
-        string filter = SearchInputNode.SearchString.ExtractText();
-        var categories = InventoryState.GetCategories(filter);
+        string dataFilter = config.SearchMode == SearchMode.Filter ? searchText : string.Empty;
+        var categories = InventoryState.GetCategories(dataFilter);
 
         float maxContentWidth = MaxWindowWidth - (ContentStartPosition.X * 2);
         int maxItemsPerLine = CalculateOptimalItemsPerLine(maxContentWidth);
@@ -125,6 +172,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             {
                 node.CategorizedInventory = data;
                 node.ItemsPerLine = Math.Min(data.Items.Count, maxItemsPerLine);
+                node.RefreshNodeVisuals();
             },
             createNodeMethod: _ => CreateCategoryNode());
 
@@ -155,23 +203,26 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected HeaderLayout CalculateHeaderLayout(AtkUnitBase* addon)
     {
-        var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
         var header = addon->WindowHeaderCollisionNode;
-
         float headerW = header->Width;
         float headerH = header->Height;
 
-        float x = header->X + (headerW - size.X) * 0.5f;
-        float y = header->Y + (headerH - size.Y) * 0.5f;
+        // Center the search bar, width is 50% of header
+        float searchWidth = headerW * 0.5f;
+        var searchSize = new Vector2(searchWidth, 28f);
+
+        float searchX = (headerW - searchWidth) * 0.5f;
+        float itemY = header->Y + (headerH - 28f) * 0.5f;
 
         return new HeaderLayout
         {
-            SearchPosition = new Vector2(x, y),
-            SearchSize = size,
+            SearchPosition = new Vector2(searchX, itemY),
+            SearchSize = searchSize,
             HeaderWidth = headerW,
-            HeaderY = y,
+            HeaderY = itemY
         };
     }
+
 
     protected void InitializeBackgroundDropTarget()
     {
@@ -344,12 +395,21 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected void ResizeWindow(float width, float height)
         => ResizeWindow(width, height, recalcLayout: true);
 
+    public void ItemRefresh() => RefreshCategoriesCore(false);
+
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
 
         InventoryState.RefreshFromGame();
         RefreshCategoriesCore(autosize: true);
+    }
+
+    protected override void OnSetup(AtkUnitBase* addon)
+    {
+        ContextMenu = new ContextMenu();
+
+        base.OnSetup(addon);
     }
 
     protected override void OnUpdate(AtkUnitBase* addon)
@@ -368,6 +428,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
+        ContextMenu?.Dispose();
         HoverSubscribed.Clear();
         RefreshQueued = false;
         RefreshAutosizeQueued = false;

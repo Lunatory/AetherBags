@@ -16,7 +16,7 @@ public class CategoryConfigurationNode :  ConfigNode<CategoryWrapper>
     {
         _categoryList = new ScrollingListNode
         {
-            AutoHideScrollbar = true,
+            AutoHideScrollBar = true,
         };
         _categoryList.FitContents = true;
         _categoryList.AttachNode(this);
