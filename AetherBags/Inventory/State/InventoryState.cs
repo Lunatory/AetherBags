@@ -1,16 +1,19 @@
+using System.Collections.Generic;
+using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Currency;
+using AetherBags.Inventory.Categories;
+using AetherBags.Inventory.Items;
+using AetherBags.Inventory.Scanning;
 using Dalamud.Game.Inventory;
 using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.State;
 
 public static unsafe class InventoryState
 {
-    public static IReadOnlyList<InventoryType> StandardInventories => InventoryScanner.StandardInventories;
+    private static IReadOnlyList<InventoryType> StandardInventories => InventoryScanner.StandardInventories;
 
     private static readonly Dictionary<ulong, AggregatedItem> AggByKey = new(capacity: 512);
     private static readonly Dictionary<ulong, ItemInfo> ItemInfoByKey = new(capacity: 512);
@@ -27,68 +30,6 @@ public static unsafe class InventoryState
 
     public static bool Contains(this IReadOnlyCollection<InventoryType> inventoryTypes, GameInventoryType type)
         => inventoryTypes.Contains((InventoryType)type);
-
-    public static void RefreshFromGame()
-    {
-        InventoryManager* inventoryManager = InventoryManager.Instance();
-        if (inventoryManager == null)
-        {
-            ClearAll();
-            return;
-        }
-
-        var config = System.Config;
-        InventoryStackMode stackMode = config.General.StackMode;
-        bool userCategoriesEnabled = config.Categories.UserCategoriesEnabled;
-        bool gameCategoriesEnabled = config.Categories.GameCategoriesEnabled;
-        List<UserCategoryDefinition> userCategories = config.Categories.UserCategories.Where(category => category.Enabled).ToList();
-
-        Services.Logger.DebugOnly($"RefreshFromGame StackMode={stackMode}");
-
-        AggByKey.Clear();
-        ItemInfoByKey.Clear();
-        SortedCategoryKeys.Clear();
-        AllCategories.Clear();
-        FilteredCategories.Clear();
-        ClaimedKeys.Clear();
-
-        InventoryScanner.ScanBags(inventoryManager, stackMode, AggByKey);
-        CategoryBucketManager.ResetBuckets(BucketsByKey);
-        InventoryScanner.BuildItemInfos(AggByKey, ItemInfoByKey);
-        InventoryContextState.RefreshMaps();
-        InventoryContextState.RefreshBlockedSlots();
-
-        if (userCategoriesEnabled && userCategories.Count > 0)
-        {
-            CategoryBucketManager.BucketByUserCategories(
-                ItemInfoByKey,
-                userCategories,
-                BucketsByKey,
-                ClaimedKeys,
-                UserCategoriesSortedScratch);
-        }
-
-        if (gameCategoriesEnabled)
-        {
-            CategoryBucketManager.BucketByGameCategories(
-                ItemInfoByKey,
-                BucketsByKey,
-                ClaimedKeys,
-                userCategoriesEnabled);
-        }
-        else
-        {
-            CategoryBucketManager.BucketUnclaimedToMisc(
-                ItemInfoByKey,
-                BucketsByKey,
-                ClaimedKeys,
-                userCategoriesEnabled);
-        }
-
-        InventoryScanner.PruneStaleItemInfos(AggByKey, ItemInfoByKey, RemoveKeysScratch);
-        CategoryBucketManager.SortBucketsAndBuildKeyList(BucketsByKey, SortedCategoryKeys);
-        CategoryBucketManager.BuildCategorizedList(BucketsByKey, SortedCategoryKeys, AllCategories);
-    }
 
     public static IReadOnlyList<CategorizedInventory> GetInventoryItemCategories(string filterString = "", bool invert = false)
     {
@@ -110,7 +51,7 @@ public static unsafe class InventoryState
             totalQuantity += kvp.Value.ItemCount;
         }
 
-        uint emptySlots = InventoryManager.Instance()->GetEmptySlotsInBag();
+        uint emptySlots = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance()->GetEmptySlotsInBag();
         const int totalSlots = 140;
 
         var categories = GetInventoryItemCategories(string.Empty);
@@ -125,9 +66,6 @@ public static unsafe class InventoryState
             CategoryCount = categoryCount,
         };
     }
-
-    public static string GetEmptyItemSlotsString()
-        => InventoryScanner.GetEmptyItemSlotsString();
 
     public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(uint[] currencyIds)
         => CurrencyState.GetCurrencyInfoList(currencyIds);

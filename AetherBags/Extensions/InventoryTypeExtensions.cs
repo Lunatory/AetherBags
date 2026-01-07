@@ -1,6 +1,7 @@
 using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using InventoryManager = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager;
 
 namespace AetherBags.Extensions;
 
@@ -107,17 +108,17 @@ public static unsafe class InventoryTypeExtensions
         };
 
         public int GetInventoryStartIndex => inventoryType switch {
-            InventoryType.Inventory2 => inventoryType.GetInventorySorter->ItemsPerPage,
-            InventoryType.Inventory3 => inventoryType.GetInventorySorter->ItemsPerPage * 2,
-            InventoryType.Inventory4 => inventoryType.GetInventorySorter->ItemsPerPage * 3,
-            InventoryType.SaddleBag2 => inventoryType.GetInventorySorter->ItemsPerPage,
-            InventoryType.PremiumSaddleBag2 => inventoryType.GetInventorySorter->ItemsPerPage,
-            InventoryType.RetainerPage2 => inventoryType.GetInventorySorter->ItemsPerPage,
-            InventoryType.RetainerPage3 => inventoryType.GetInventorySorter->ItemsPerPage * 2,
-            InventoryType.RetainerPage4 => inventoryType.GetInventorySorter->ItemsPerPage * 3,
-            InventoryType.RetainerPage5 => inventoryType.GetInventorySorter->ItemsPerPage * 4,
-            InventoryType.RetainerPage6 => inventoryType.GetInventorySorter->ItemsPerPage * 5,
-            InventoryType.RetainerPage7 => inventoryType.GetInventorySorter->ItemsPerPage * 6,
+            InventoryType.Inventory2 => inventoryType.UIPageSize,
+            InventoryType.Inventory3 => inventoryType.UIPageSize * 2,
+            InventoryType.Inventory4 => inventoryType.UIPageSize * 3,
+            InventoryType.SaddleBag2 => inventoryType.UIPageSize,
+            InventoryType.PremiumSaddleBag2 => inventoryType.UIPageSize,
+            InventoryType.RetainerPage2 => inventoryType.UIPageSize,
+            InventoryType.RetainerPage3 => inventoryType.UIPageSize * 2,
+            InventoryType.RetainerPage4 => inventoryType.UIPageSize * 3,
+            InventoryType.RetainerPage5 => inventoryType.UIPageSize * 4,
+            InventoryType.RetainerPage6 => inventoryType.UIPageSize * 5,
+            InventoryType.RetainerPage7 => inventoryType.UIPageSize * 6,
             _ => 0,
         };
 
@@ -156,6 +157,14 @@ public static unsafe class InventoryTypeExtensions
             InventoryType.RetainerPage6 or
             InventoryType.RetainerPage7;
 
+        public int UIPageSize => inventoryType switch
+        {
+            _ when (inventoryType.IsMainInventory || inventoryType.IsRetainer) => 35,
+            _ when inventoryType.IsSaddleBag => 70,
+            _ when inventoryType.IsArmory => 50,
+            _ => 0,
+        };
+
         public int ContainerGroup => inventoryType switch
         {
             _ when inventoryType.IsMainInventory => 1,
@@ -164,6 +173,8 @@ public static unsafe class InventoryTypeExtensions
             _ when inventoryType.IsRetainer => 4,
             _ => 0,
         };
+
+        public bool IsLoaded => InventoryManager.Instance()->GetInventoryContainer(inventoryType)->IsLoaded;
 
         public bool IsSameContainerGroup(InventoryType other)
             => inventoryType.ContainerGroup == other.ContainerGroup;

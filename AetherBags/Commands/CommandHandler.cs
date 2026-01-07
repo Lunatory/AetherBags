@@ -1,7 +1,9 @@
 using System;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
+using AetherBags.Inventory.State;
 using Dalamud.Game.Command;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace AetherBags.Commands;
 
@@ -28,7 +30,7 @@ public class CommandHandler : IDisposable
         });
     }
 
-    private void OnCommand(string command, string args)
+    private unsafe void OnCommand(string command, string args)
     {
         var argsParts = args.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         var subCommand = argsParts.Length > 0 ? argsParts[0].ToLowerInvariant() : string.Empty;
@@ -57,7 +59,7 @@ public class CommandHandler : IDisposable
                 break;
 
             case "refresh":
-                System.AddonInventoryWindow.ManualInventoryRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
                 PrintChat("Inventory refreshed.");
                 break;
 
@@ -67,7 +69,7 @@ public class CommandHandler : IDisposable
 
             case "import-sk":
                 ImportExportResetHelper.TryImportSortaKindaFromClipboard(true);
-                System.AddonInventoryWindow.ManualInventoryRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
                 break;
 
             case "export":
@@ -76,18 +78,26 @@ public class CommandHandler : IDisposable
 
             case "import":
                 ImportExportResetHelper.TryImportConfigFromClipboard();
-                System.AddonInventoryWindow.ManualInventoryRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
                 break;
 
             case "reset":
                 ImportExportResetHelper.TryResetConfig();
-                System.AddonInventoryWindow.ManualInventoryRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
                 break;
 
             case "count":
             case "stats":
                 var stats = InventoryState.GetInventoryStats();
                 PrintChat($"{stats.UsedSlots}/{stats.TotalSlots} slots used ({stats.UsagePercent:F0}%) | {stats.TotalItems} unique items | {stats.CategoryCount} categories");
+                break;
+
+            case "saddle":
+                System.AddonSaddleBagWindow.Toggle();
+                break;
+
+            case "retainer":
+                System.AddonRetainerWindow.Toggle();
                 break;
 
             case "help":

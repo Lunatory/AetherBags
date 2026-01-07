@@ -1,8 +1,9 @@
-using AetherBags.Configuration;
 using System;
 using System.Text.RegularExpressions;
+using AetherBags.Configuration;
+using AetherBags.Inventory.Items;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Categories;
 
 internal static class UserCategoryMatcher
 {

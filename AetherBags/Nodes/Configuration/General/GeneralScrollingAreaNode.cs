@@ -5,30 +5,30 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.General;
 
-public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNode>
+public sealed class GeneralScrollingAreaNode : ScrollingListNode
 {
-    private readonly CheckboxNode _debugCheckboxNode = null!;
-
     public GeneralScrollingAreaNode()
     {
         GeneralSettings config = System.Config.General;
 
-        ContentNode.ItemSpacing = 32;
+        new ImportExportResetNode().AttachNode(this);
 
-        ContentNode.AddNode(new FunctionalConfigurationNode());
+        ItemSpacing = 10;
 
-        ContentNode.AddNode(new LayoutConfigurationNode());
+        AddNode(new FunctionalConfigurationNode());
 
-        _debugCheckboxNode = new CheckboxNode
+        AddNode(new LayoutConfigurationNode());
+
+        AddNode(new CheckboxNode
         {
             Size = new Vector2(300, 20),
             IsVisible = true,
             String = "Debug Mode",
             IsChecked = config.DebugEnabled,
-            OnClick = isChecked => { config.DebugEnabled = isChecked; }
-        };
-        ContentNode.AddNode(_debugCheckboxNode);
+            OnClick = isChecked =>
+            {
+                config.DebugEnabled = isChecked;
+            }
+        });
     }
-
-    private void RefreshInventory() => System.AddonInventoryWindow.ManualInventoryRefresh();
 }

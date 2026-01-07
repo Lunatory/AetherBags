@@ -1,5 +1,6 @@
 using System.Numerics;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Context;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.Timelines;
@@ -87,7 +88,7 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
 
             Timeline?.PlayAnimation(101);
         }
-    }
+    } = null!;
 
     // Future Zeff, this always goes on a parent
     private Timeline ParentLabels => new TimelineBuilder()

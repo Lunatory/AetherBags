@@ -17,7 +17,7 @@ public readonly record struct InventoryLocation(InventoryType Container, ushort 
 
 public readonly record struct InventoryMappedLocation(int Container, int Slot)
 {
-    public static readonly InventoryMappedLocation Invalid = new(0, 0);
+    public static readonly InventoryMappedLocation Invalid = new(-1, -1);
 
     public bool IsValid => Container != 0;
 

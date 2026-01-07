@@ -1,19 +1,12 @@
-using AetherBags.Configuration;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using System.Collections.Generic;
+using AetherBags.Configuration;
+using AetherBags.Inventory.Items;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Scanning;
 
 public static unsafe class InventoryScanner
 {
-    private static readonly InventoryType[] BagInventories =
-    [
-        InventoryType.Inventory1,
-        InventoryType.Inventory2,
-        InventoryType.Inventory3,
-        InventoryType.Inventory4,
-    ];
-
     public static readonly InventoryType[] StandardInventories =
     [
         InventoryType.Inventory1,
@@ -46,20 +39,23 @@ public static unsafe class InventoryScanner
     public static ulong MakeNaturalSlotKey(InventoryType container, int slot)
         => ((ulong)(uint)container << 32) | (uint)slot;
 
-    public static void ScanBags(
+    public static void ScanInventories(
         InventoryManager* inventoryManager,
         InventoryStackMode stackMode,
-        Dictionary<ulong, AggregatedItem> aggByKey)
+        Dictionary<ulong, AggregatedItem> aggByKey,
+        InventorySourceType source)
     {
         aggByKey.Clear();
+
+        var inventories = InventorySourceDefinitions.GetInventories(source);
 
         int scannedSlots = 0;
         int nonEmptySlots = 0;
         int collisions = 0;
 
-        for (int inventoryIndex = 0; inventoryIndex < BagInventories.Length; inventoryIndex++)
+        for (int inventoryIndex = 0; inventoryIndex < inventories.Length; inventoryIndex++)
         {
-            var inventoryType = BagInventories[inventoryIndex];
+            var inventoryType = inventories[inventoryIndex];
             var container = inventoryManager->GetInventoryContainer(inventoryType);
             if (container == null)
             {
@@ -164,16 +160,58 @@ public static unsafe class InventoryScanner
     public static InventoryContainer* GetInventoryContainer(InventoryType inventoryType)
         => InventoryManager.Instance()->GetInventoryContainer(inventoryType);
 
-    public static string GetEmptyItemSlotsString()
+    public static InventoryLocation GetFirstEmptySlot(InventorySourceType source)
     {
-        uint empty = InventoryManager.Instance()->GetEmptySlotsInBag();
-        uint used = 140 - empty;
-        return $"{used}/140";
-    }
-}
+        var manager = InventoryManager.Instance();
+        var containers = InventorySourceDefinitions.GetContainersForSource(source);
 
-public struct AggregatedItem
-{
-    public InventoryItem First;
-    public int Total;
+        foreach (var type in containers)
+        {
+            var container = manager->GetInventoryContainer(type);
+            if (container == null || container->Size == 0) continue;
+
+            for (int i = 0; i < container->Size; i++)
+            {
+                if (container->Items[i].ItemId == 0)
+                    return new InventoryLocation(type, (ushort)i);
+            }
+        }
+
+        return InventoryLocation.Invalid;
+    }
+
+    public static string GetEmptySlotsString(InventorySourceType source)
+    {
+        int total = InventorySourceDefinitions.GetTotalSlots(source);
+        uint empty = source switch
+        {
+            InventorySourceType.MainBags => InventoryManager.Instance()->GetEmptySlotsInBag(),
+            InventorySourceType.SaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.SaddleBag),
+            InventorySourceType.PremiumSaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.PremiumSaddleBag),
+            InventorySourceType.AllSaddleBags => GetEmptySlotsInContainer(InventorySourceDefinitions.AllSaddleBags),
+            InventorySourceType.Retainer => GetEmptySlotsInContainer(InventorySourceDefinitions.Retainer),
+            _ => 0,
+        };
+        uint used = (uint)total - empty;
+        return $"{used}/{total}";
+    }
+
+    private static uint GetEmptySlotsInContainer(InventoryType[] inventories)
+    {
+        uint empty = 0;
+        var inventoryManager = InventoryManager.Instance();
+        foreach (var inv in inventories)
+        {
+            var container = inventoryManager->GetInventoryContainer(inv);
+            var containerSize = container->Size;
+
+            if (container == null) continue;
+            for (int i = 0; i < containerSize; i++)
+            {
+                if (container->Items[i]. ItemId == 0)
+                    empty++;
+            }
+        }
+        return empty;
+    }
 }

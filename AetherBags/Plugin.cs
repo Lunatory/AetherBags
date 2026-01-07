@@ -5,15 +5,18 @@ using AetherBags.Commands;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Context;
+using AetherBags.Inventory.State;
+using AetherBags.IPC;
+using Dalamud.Game.Gui;
 using Dalamud.Plugin;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiToolKit;
 
 namespace AetherBags;
 
 public unsafe class Plugin : IDalamudPlugin
 {
-    private static string HelpDescription => "Opens your inventory.";
-
     private readonly CommandHandler _commandHandler;
     private readonly InventoryHooks _inventoryHooks;
     private readonly InventoryLifecycles _inventoryLifecycles;
@@ -22,16 +25,32 @@ public unsafe class Plugin : IDalamudPlugin
     {
         pluginInterface.Create<Services>();
 
+        System.Config = Util.LoadConfigOrDefault();
+
         BackupHelper.DoConfigBackup(pluginInterface);
 
         KamiToolKitLibrary.Initialize(pluginInterface);
 
-        System.Config = Util.LoadConfigOrDefault();
+        System.IPC = new IPCService();
 
         System.AddonInventoryWindow = new AddonInventoryWindow
         {
-            InternalName = "AetherBags",
+            InternalName = "AetherBags_MainBags",
             Title = "AetherBags",
+            Size = new Vector2(750, 750),
+        };
+
+        System.AddonSaddleBagWindow = new AddonSaddleBagWindow
+        {
+            InternalName = "AetherBags_SaddleBag",
+            Title = "AetherSaddlebag",
+            Size = new Vector2(750, 750),
+        };
+
+        System.AddonRetainerWindow = new AddonRetainerWindow
+        {
+            InternalName = "AetherBags_Retainer",
+            Title = "AetherRetainerbag",
             Size = new Vector2(750, 750),
         };
 
@@ -47,8 +66,6 @@ public unsafe class Plugin : IDalamudPlugin
 
         _commandHandler = new CommandHandler();
 
-        // Services.GameInventory.InventoryChanged += InventoryState.OnRawItemAdded;
-
         Services.ClientState.Login += OnLogin;
         Services.ClientState.Logout += OnLogout;
 
@@ -62,22 +79,20 @@ public unsafe class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
-        Util.SaveConfig(System.Config);
-
-        // Services.GameInventory.InventoryChanged -= InventoryState.OnRawItemAdded;
-
-        Services.ClientState.Login -= OnLogin;
-        Services.ClientState.Logout -= OnLogout;
-
-        _commandHandler.Dispose();
-
-        System.AddonInventoryWindow.Dispose();
-        System.AddonConfigurationWindow.Dispose();
-
-        KamiToolKitLibrary.Dispose();
-
+        InventoryAddonContextMenu.Close();
         _inventoryHooks.Dispose();
         _inventoryLifecycles.Dispose();
+
+        System.IPC.Dispose();
+        HighlightState.ClearAll();
+
+        System.AddonInventoryWindow.Dispose();
+        System.AddonSaddleBagWindow.Dispose();
+        System.AddonRetainerWindow.Dispose();
+        System.AddonConfigurationWindow.Dispose();
+
+        Util.SaveConfig(System.Config);
+        KamiToolKitLibrary.Dispose();
     }
 
     private void OnLogin()
@@ -96,6 +111,8 @@ public unsafe class Plugin : IDalamudPlugin
         Util.SaveConfig(System.Config);
         InventoryState.TrackLootedItems = false;
         System.AddonInventoryWindow.Close();
+        System.AddonSaddleBagWindow.Close();
+        System.AddonRetainerWindow.Close();
         System.AddonConfigurationWindow.Close();
     }
 }

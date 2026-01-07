@@ -1,11 +1,12 @@
-using FFXIVClientStructs.FFXIV.Client.Game;
-using Lumina.Excel;
-using Lumina.Excel.Sheets;
 using System;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using AetherBags.Inventory.Context;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using Lumina.Excel;
+using Lumina.Excel.Sheets;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Items;
 
 public sealed class ItemInfo : IEquatable<ItemInfo>
 {
@@ -57,15 +58,13 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     public bool IsHq => Item.Flags.HasFlag(InventoryItem.ItemFlags.HighQuality);
     public bool IsDesynthesizable => Row.Desynth > 0;
-    public bool IsCraftable => Row.ItemAction.RowId != 0 || Row.CanBeHq; // Simplified check
+    public bool IsCraftable => Row.ItemAction.RowId != 0 || Row.CanBeHq;
     public bool IsGlamourable => Row.IsGlamorous;
     public bool IsSpiritbonded => Item.SpiritbondOrCollectability >= 10000; // 100% = 10000
 
     private string Description => _description ??= Row.Description.ToString();
 
-    public InventoryMappedLocation VisualLocation =>
-        IsMainInventory ? InventoryContextState.GetVisualLocation(InventoryPage, Item.Slot)
-            : new InventoryMappedLocation((int)Item.Container.AgentItemContainerId, Item. Slot);
+    public InventoryMappedLocation VisualLocation => InventoryContextState.GetVisualLocation(Item.Container, Item.Slot);
 
 
     public int InventoryPage => Item.Container switch
@@ -83,11 +82,53 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     {
         get
         {
-            if (!InventoryContextState.HasActiveContext)
-                return true;
+            if (IsSlotBlocked) return false;
+            if (!CheckNativeContextEligibility()) return false;
+            if (!HighlightState.IsInActiveFilters(Item.ItemId)) return false;
 
-            return IsMainInventory && InventoryContextState.IsEligible(InventoryPage, Item.Slot);
+            return true;
         }
+    }
+
+    public float VisualAlpha => IsEligibleForContext ? 1.0f : 0.4f;
+
+    public Vector3 HighlightOverlayColor
+    {
+        get
+        {
+            if (!System.Config.Categories.BisBuddyEnabled)
+                return Vector3.Zero;
+
+            return HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero;
+        }
+    }
+
+    private bool CheckNativeContextEligibility()
+    {
+        uint contextId = InventoryContextState.ActiveContextId;
+        if (contextId == 0) return true;
+
+        bool isRetainerContext = contextId == 4;
+        bool isSaddlebagContext = contextId == 29;
+        bool isMainContext = !isRetainerContext && isSaddlebagContext == false;
+
+        if (IsMainInventory)
+        {
+            if (!isMainContext) return true;
+            return InventoryContextState.IsEligible(InventoryPage, Item.Slot);
+        }
+
+        if (Item.Container.IsRetainer)
+        {
+            if (!isRetainerContext) return true;
+        }
+
+        if (Item.Container.IsSaddleBag)
+        {
+            if (!isSaddlebagContext) return true;
+        }
+
+        return true;
     }
 
     public bool IsMainInventory => InventoryPage >= 0;

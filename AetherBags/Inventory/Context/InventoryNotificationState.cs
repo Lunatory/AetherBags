@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Lumina.Excel.Sheets;
 using Lumina.Text.ReadOnly;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Inventory.Context;
 
 public class InventoryNotificationState
 {

@@ -37,7 +37,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
                 MoveItemSlotDetour);
             _moveItemSlotHook.Enable();
 
-            Services.Logger.Debug("MoveItemSlot hooked successfully.");
+            Services.Logger.DebugOnly("MoveItemSlot hooked successfully.");
         }
         catch (Exception e)
         {
@@ -51,7 +51,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
                 OpenInventoryDetour);
             _openInventoryHook.Enable();
 
-            Services.Logger.Debug("OpenInventory hooked successfully.");
+            Services.Logger.DebugOnly("OpenInventory hooked successfully.");
         }
         catch (Exception e)
         {
@@ -64,7 +64,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
                 HandleInventoryEventDetour);
             _handleInventoryEventHook.Enable();
 
-            Services.Logger.Debug("HandleInventoryEvent hooked successfully.");
+            Services.Logger.DebugOnly("HandleInventoryEvent hooked successfully.");
         }
         catch (Exception e)
         {
@@ -77,7 +77,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
                 OpenAddonDetour);
             _openAddonHook.Enable();
 
-            Services.Logger.Debug("OpenAddon hooked successfully.");
+            Services.Logger.DebugOnly("OpenAddon hooked successfully.");
         }
         catch (Exception e)
         {
@@ -93,10 +93,11 @@ public sealed unsafe class InventoryHooks :  IDisposable
         ushort dstSlot,
         bool unk)
     {
-        InventoryItem* sourceItem = InventoryManager.Instance()->GetInventorySlot(srcType, srcSlot);
-        InventoryItem* destItem = InventoryManager.Instance()->GetInventorySlot(dstType, dstSlot);
+        //InventoryItem* sourceItem = InventoryManager.Instance()->GetInventorySlot(srcType, srcSlot);
+        //InventoryItem* destItem = InventoryManager.Instance()->GetInventorySlot(dstType, dstSlot);
 
-        Services.Logger.Debug($"[MoveItemSlot Hook] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId} Unk: {unk}");
+        Services.Logger.DebugOnly($"[MoveItemSlot Hook] Moving {srcType}@{srcSlot} -> {dstType}@{dstSlot} I Unk: {unk}");
+        //Services.Logger.DebugOnly($"[MoveItemSlot Hook] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId} Unk: {unk}");
 
         return _moveItemSlotHook!.Original(manager, srcType, srcSlot, dstType, dstSlot, unk);
     }
@@ -104,7 +105,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
     /*
     private void OpenInventoryDetour(UIModule* uiModule, byte type)
     {
-        Services.Logger.Debug($"[OpenInventory Hook] Opening inventory of type {type}");
+        Services.Logger.DebugOnly($"[OpenInventory Hook] Opening inventory of type {type}");
         _openInventoryHook?.Original(uiModule, type);
     }
 
@@ -112,7 +113,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
     {
         for(int i = 0; i < valueCount; i++)
         {
-            Services.Logger.Debug($"[HandleInventoryEvent Hook] AtkValue[{i}]: Type={atkValue[i].Type}, ToString: {atkValue[i].ToString()} ");
+            Services.Logger.DebugOnly($"[HandleInventoryEvent Hook] AtkValue[{i}]: Type={atkValue[i].Type}, ToString: {atkValue[i].ToString()} ");
         }
         _handleInventoryEventHook?.Original(eventInterface, atkValue, valueCount);
     }
@@ -121,7 +122,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
     {
         for(int i = 0; i < valueCount; i++)
         {
-            Services.Logger.Debug($"[OpenAddon Hook] AtkValue[{i}]: ToString: {values[i].ToString()} ");
+            Services.Logger.DebugOnly($"[OpenAddon Hook] AtkValue[{i}]: ToString: {values[i].ToString()} ");
         }
         return _openAddonHook!.Original(thisPtr, addonNameId, valueCount, values, eventInterface, eventKind, parentAddonId, depthLayer);
     }

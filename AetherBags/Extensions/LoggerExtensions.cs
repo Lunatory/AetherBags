@@ -2,13 +2,16 @@ namespace AetherBags.Extensions;
 
 public static class LoggerExtensions
 {
-    public static void DebugOnly(this object logger, string message)
+    extension(object logger)
     {
-        if(System.Config.General.DebugEnabled) Services.Logger.Debug(message);
-    }
+        public void DebugOnly(string message)
+        {
+            if (System.Config?.General?.DebugEnabled == true)
+            {
+                Services.Logger.DebugOnly(message);
+            }
+        }
 
-    public static void DebugOnly(this object logger, string message, params object[] args)
-    {
-        if(System.Config.General.DebugEnabled) Services.Logger.Debug(message);
+        public void DebugOnly(string message, params object[] args) => DebugOnly(logger, string.Format(message, args));
     }
 }

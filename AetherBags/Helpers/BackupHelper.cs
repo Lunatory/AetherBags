@@ -14,7 +14,7 @@ public static class BackupHelper {
     private const int MaxBackups = 10;
     private const string Name = "AetherBags";
     public static void DoConfigBackup(IDalamudPluginInterface pluginInterface) {
-        Services.Logger.Debug("Backup configuration start.");
+        Services.Logger.DebugOnly("Backup configuration start.");
         try {
             var configDirectory = pluginInterface.ConfigDirectory;
             if (!configDirectory.Exists) {

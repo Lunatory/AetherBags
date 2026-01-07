@@ -1,7 +1,10 @@
 using System;
 using System.Numerics;
 using AetherBags.Helpers;
+using AetherBags.Hooks;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Categories;
+using AetherBags.Inventory.Items;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -11,15 +14,12 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
-// TODO: Switch back to CS version when Dalamud Updated
-using DragDropFixedNode = AetherBags.Nodes.DragDropNode;
-
 namespace AetherBags.Nodes.Inventory;
 
 public class InventoryCategoryNode : SimpleComponentNode
 {
     private readonly TextNode _categoryNameTextNode;
-    private readonly HybridDirectionalFlexNode<DragDropFixedNode> _itemGridNode;
+    private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
 
     private const float FallbackItemSize = 46;
     private const float HeaderHeight = 16;
@@ -33,6 +33,8 @@ public class InventoryCategoryNode : SimpleComponentNode
     private string _fullHeaderText = string.Empty;
 
     public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
+    public Action? OnRefreshRequested { get; set; }
+    public Action? OnDragEnd { get; set; }
 
     public InventoryCategoryNode()
     {
@@ -51,7 +53,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         _categoryNameTextNode.AddFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
         _categoryNameTextNode.AttachNode(this);
 
-        _itemGridNode = new HybridDirectionalFlexNode<DragDropFixedNode>
+        _itemGridNode = new HybridDirectionalFlexNode<DragDropNode>
         {
             Position = new Vector2(0, HeaderHeight),
             Size = new Vector2(240, 92),
@@ -218,26 +220,35 @@ public class InventoryCategoryNode : SimpleComponentNode
     private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
     {
         InventoryItem item = data.Item;
-        InventoryMappedLocation location = data.VisualLocation;
+        InventoryMappedLocation visualLocation = data.VisualLocation;
+
+        var visualInvType = InventoryType.GetInventoryTypeFromContainerId(visualLocation.Container);
+        int absoluteIndex = visualInvType.GetInventoryStartIndex + visualLocation.Slot;
+
+        DragDropPayload nodePayload = new DragDropPayload
+        {
+            // Int1 is always the container ID, for Item DragDrop Int2 is only used as a fallback
+            // ReferenceIndex is the absolute index that's actually used
+            Type = DragDropType.Item,
+            Int1 = visualLocation.Container,
+            Int2 = visualLocation.Slot,
+            ReferenceIndex = (short)absoluteIndex
+        };
 
         return new InventoryDragDropNode
         {
             Size = new Vector2(42, 46),
-            Alpha = data.IsEligibleForContext || data.IsSlotBlocked ? 1.0f : 0.4f,
+            Alpha = data.VisualAlpha,
+            AddColor = data.HighlightOverlayColor,
+            IsDraggable = !data.IsSlotBlocked,
             IsVisible = true,
             IconId = item.IconId,
             AcceptedType = DragDropType.Item,
-            IsDraggable = !data.IsSlotBlocked,
-            Payload = new DragDropPayload
-            {
-                Type = DragDropType.Item,
-                Int1 = location.Container,
-                Int2 = location.Slot,
-            },
+            Payload = nodePayload,
             IsClickable = true,
             OnDiscard = node => OnDiscard(node, data),
-            OnEnd = _ => System.AddonInventoryWindow.ManualInventoryRefresh(),
-            OnPayloadAccepted = (node, payload) => OnPayloadAccepted(node, payload, data),
+            OnEnd = _ => OnDragEnd?.Invoke(),
+            OnPayloadAccepted = (node, acceptedPayload) => OnPayloadAccepted(node, acceptedPayload, data),
             OnRollOver = node =>
             {
                 BeginHeaderHover();
@@ -254,49 +265,63 @@ public class InventoryCategoryNode : SimpleComponentNode
         };
     }
 
+    public void RefreshNodeVisuals()
+    {
+        foreach (var node in _itemGridNode.Nodes)
+        {
+            if (node is not InventoryDragDropNode itemNode || itemNode.ItemInfo == null) continue;
+
+            itemNode.Alpha = itemNode.ItemInfo.VisualAlpha;
+            itemNode.AddColor = itemNode.ItemInfo.HighlightOverlayColor;
+            itemNode.IsDraggable = !itemNode.ItemInfo.IsSlotBlocked;
+        }
+    }
+
     private unsafe void OnDiscard(DragDropNode node, ItemInfo item)
     {
         uint addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(node)->Id;
         AgentInventoryContext.Instance()->DiscardItem(item.Item.GetLinkedItem(), item.Item.Container, item.Item.Slot, addonId);
     }
 
-    private void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo targetItemInfo)
+    private void OnPayloadAccepted(DragDropNode node, DragDropPayload acceptedPayload, ItemInfo targetItemInfo)
     {
-        InventoryItem item = targetItemInfo.Item;
-        if (!payload.IsValidInventoryPayload)
+        try
         {
-            Services.Logger.Warning($"[OnPayload] Invalid payload type: {payload.Type}");
-            return;
+            // KTK clears node.Payload before invoking this, so setting it manually again
+            var nodePayload = new DragDropPayload
+            {
+                Type = DragDropType.Item,
+                Int1 = targetItemInfo.VisualLocation.Container,
+                Int2 = targetItemInfo.VisualLocation.Slot,
+                ReferenceIndex = (short)(targetItemInfo.Item.Container.GetInventoryStartIndex + targetItemInfo.VisualLocation.Slot)
+            };
+
+            Services.Logger.DebugOnly($"[OnPayload] ACCEPTED payload: Type={acceptedPayload.Type} Int1={acceptedPayload.Int1} Int2={acceptedPayload.Int2} Ref={acceptedPayload.ReferenceIndex}");
+            Services.Logger.DebugOnly($"[OnPayload] NODE payload: Type={nodePayload.Type} Int1={nodePayload.Int1} Int2={nodePayload.Int2} Ref={nodePayload.ReferenceIndex}");
+
+            if (!acceptedPayload.IsValidInventoryPayload || !nodePayload.IsValidInventoryPayload)
+            {
+                Services.Logger.Warning($"[OnPayload] Invalid payload type: Accepted={acceptedPayload.Type} Node={nodePayload.Type}");
+                return;
+            }
+
+            if (acceptedPayload.IsSameBaseContainer(nodePayload))
+            {
+                Services.Logger.DebugOnly("[OnPayload] Source and target are in the same base container, skipping move.");
+                node.IconId = targetItemInfo.IconId;
+                node.Payload = nodePayload;
+                return;
+            }
+
+            var sourceCopy = acceptedPayload;
+            var targetCopy = nodePayload;
+
+            InventoryMoveHelper.HandleItemMovePayload(sourceCopy, targetCopy);
+            OnRefreshRequested?.Invoke();
         }
-
-        InventoryLocation sourceLocation = payload.InventoryLocation;
-
-        if (!sourceLocation.IsValid)
+        catch (Exception ex)
         {
-            Services.Logger.Warning($"[OnPayload] Could not resolve source from payload");
-            return;
+            Services.Logger.Error(ex, "[OnPayload] Error handling payload acceptance");
         }
-
-        InventoryLocation targetLocation = new InventoryLocation(
-            item.Container,
-            (ushort)item.Slot
-        );
-
-        if (sourceLocation.Container.IsSameContainerGroup(targetLocation.Container))
-        {
-            Services.Logger.Debug($"[OnPayload] Source and target are in the same container group; no move performed");
-            node.Payload = payload;
-            node.IconId = item.IconId;
-            System.AddonInventoryWindow.ManualInventoryRefresh();
-            return;
-        };
-
-        Services.Logger.Debug($"[OnPayload] Moving {sourceLocation} -> {targetLocation}");
-
-        InventoryMoveHelper.MoveItem(
-            sourceLocation.Container, sourceLocation.Slot,
-            targetLocation.Container, targetLocation.Slot
-        );
-        System.AddonInventoryWindow.ManualInventoryRefresh();
     }
 }

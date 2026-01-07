@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Currency;
 using AetherBags.Inventory;
+using AetherBags.Inventory.State;
 using AetherBags.Nodes.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
@@ -24,7 +25,7 @@ public sealed class InventoryFooterNode : SimpleComponentNode
             FontType = FontType.MiedingerMed,
             TextFlags = TextFlags.Glare,
             TextColor = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(32) // Could also be Color 65
+            TextOutlineColor = ColorHelper.GetColor(32)
         };
         _slotAmountTextNode.AttachNode(this);
 
@@ -46,8 +47,8 @@ public sealed class InventoryFooterNode : SimpleComponentNode
         IReadOnlyList<CurrencyInfo> currencyInfoList = InventoryState.GetCurrencyInfoList([1, 28, 0xFFFF_FFFE, 0xFFFF_FFFD]);
         _currencyListNode.SyncWithListDataByKey<CurrencyInfo, CurrencyNode, uint>(
             dataList: currencyInfoList,
-            getKeyFromData: c => c.ItemId,
-            getKeyFromNode: n => n.Currency.ItemId,
+            getKeyFromData: currencyInfo => currencyInfo.ItemId,
+            getKeyFromNode: node => node.Currency.ItemId,
             updateNode: (node, data) =>
             {
                 node.Currency = data;
