@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.AddonLifecycles;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
@@ -442,7 +443,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         }
     }
 
-    /*
+
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {
         _requestedUpdateCount++;
@@ -456,7 +457,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         InventoryState.RefreshFromGame();
         RefreshCategoriesCore(autosize: true);
     }
-    */
+
 
     protected override void OnSetup(AtkUnitBase* addon)
     {
