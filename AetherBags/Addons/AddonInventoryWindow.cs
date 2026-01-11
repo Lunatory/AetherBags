@@ -139,6 +139,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     private void OnClearAllLootedItems()
     {
         System.LootedItemsTracker.Clear();
+        System.LootedItemsTracker.FlushPendingChanges();
     }
 
     public void ManualCurrencyRefresh()
@@ -154,7 +155,6 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
             if (IsOpen) _notificationNode.NotificationInfo = info;
         }, delayTicks: 3);
     }
-
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {

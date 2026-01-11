@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using AetherBags.AddonLifecycles;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
@@ -10,6 +9,7 @@ using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
 using AetherBags.Inventory.Scanning;
 using AetherBags.Inventory.State;
+using AetherBags.Monitoring;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
@@ -66,25 +66,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     private int _refreshFromLifecycleCount;
     private long _lastLogTick;
 
-    public void ManualRefresh()
-    {
-        if (!IsOpen) return;
-        if (!Services.ClientState.IsLoggedIn) return;
-        if (_isRefreshing) return;
-        if (!IsSetupComplete) return;
-
-        try
-        {
-            _isRefreshing = true;
-            InventoryState.RefreshFromGame();
-            RefreshCategoriesCore(autosize: true);
-        }
-        finally
-        {
-            _isRefreshing = false;
-        }
-    }
-
+    public void ManualRefresh() => ExecuteRefresh(true);
 
     public string GetSearchText() => SearchInputNode?.SearchString.ExtractText() ?? string.Empty;
 
@@ -99,27 +81,24 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         }, delayTicks: 3);
     }
 
-    public void RefreshFromLifecycle()
+    private void ExecuteRefresh(bool autosize)
     {
-        if (!IsSetupComplete) return;
-        if (!IsOpen) return;
-        if (_isRefreshing) return;
+        if (!IsSetupComplete || !IsOpen || _isRefreshing) return;
 
         try
         {
             _isRefreshing = true;
-
-            _refreshFromLifecycleCount++;
-            LogRefreshStats();
-
             InventoryState.RefreshFromGame();
-            RefreshCategoriesCore(autosize: true);
+            System.LootedItemsTracker.FlushPendingChanges();
+            RefreshCategoriesCore(autosize);
         }
         finally
         {
             _isRefreshing = false;
         }
     }
+
+    public void RefreshFromLifecycle() => ExecuteRefresh(autosize: true);
 
     protected virtual void RefreshCategoriesCore(bool autosize)
     {
@@ -446,16 +425,10 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {
-        _requestedUpdateCount++;
-        LogRefreshStats();
-
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
 
-        if (DragDropState.IsDragging)
-            return;
-
-        InventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize: true);
+        if (DragDropState.IsDragging) return;
+        ExecuteRefresh(autosize: true);
     }
 
 
