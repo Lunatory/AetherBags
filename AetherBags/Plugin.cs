@@ -99,10 +99,8 @@ public class Plugin : IDalamudPlugin
         System.Config = Util.LoadConfigOrDefault();
         System.LootedItemsTracker.Enable();
 
-#if DEBUG
-        System.AddonInventoryWindow.Toggle();
-        System.AddonConfigurationWindow.Toggle();
-#endif
+        System.AddonInventoryWindow.DebugOpen();
+        System.AddonConfigurationWindow.DebugOpen();
     }
 
     private void OnLogout(int type, int code)

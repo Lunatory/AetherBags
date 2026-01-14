@@ -2,8 +2,8 @@ using System.Numerics;
 using AetherBags.Inventory.Context;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
-using KamiToolKit.Classes.Timelines;
 using KamiToolKit.Nodes;
+using KamiToolKit.Timelines;
 
 namespace AetherBags.Nodes.Inventory;
 
@@ -12,8 +12,6 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
     private readonly SimpleNineGridNode glowNode;
     private readonly TextNode titleTextNode;
     private readonly TextNode messageTextNode;
-
-    private static readonly InventoryNotificationState NotificationState = new();
 
     public InventoryNotificationNode()
     {

@@ -17,7 +17,7 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
-using KamiToolKit.Classes.ContextMenu;
+using KamiToolKit.ContextMenu;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;

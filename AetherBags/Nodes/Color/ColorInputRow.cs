@@ -3,6 +3,7 @@ using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Addons;
+using KamiToolKit.Premade.Color;
 
 namespace AetherBags.Nodes.Color;
 
