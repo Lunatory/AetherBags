@@ -1,4 +1,4 @@
-using KamiToolKit.Premade.GenericSearchListItemNodes;
+using KamiToolKit.Premade.GenericListItemNodes;
 
 namespace AetherBags.Addons;
 

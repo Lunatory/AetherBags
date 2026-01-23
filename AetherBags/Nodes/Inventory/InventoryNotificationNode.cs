@@ -74,8 +74,8 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
         {
             field = value;
 
-            titleTextNode.SeString = value.Title;
-            messageTextNode.SeString = value.Message;
+            titleTextNode.String = value.Title;
+            messageTextNode.String = value.Message;
 
             if (value.Title.IsEmpty && value.Message.IsEmpty)
             {

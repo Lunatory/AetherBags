@@ -4,6 +4,7 @@ using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
@@ -16,13 +17,12 @@ public sealed class UintListEditorNode : VerticalListNode
 
     private readonly LabelTextNode _headerLabel;
     private readonly VerticalListNode _itemsContainer;
-    private readonly HorizontalListNode _addRow;
     private readonly NumericInputNode _addInput;
 
     public Func<uint, string>? LabelResolver { get; init; }
     public Action? OnChanged { get; set; }
 
-    public required string Label
+    public required ReadOnlySeString Label
     {
         get => _headerLabel.String;
         init => _headerLabel.String = value;
@@ -50,7 +50,7 @@ public sealed class UintListEditorNode : VerticalListNode
         };
         AddNode(_itemsContainer);
 
-        _addRow = new HorizontalListNode
+        var addRow = new HorizontalListNode
         {
             Size = new Vector2(LabelWidth + 40f, RowHeight),
             ItemSpacing = 4.0f,
@@ -63,7 +63,7 @@ public sealed class UintListEditorNode : VerticalListNode
             Max = int.MaxValue,
             Value = 0,
         };
-        _addRow.AddNode(_addInput);
+        addRow.AddNode(_addInput);
 
         var addButton = new TextButtonNode
         {
@@ -71,9 +71,9 @@ public sealed class UintListEditorNode : VerticalListNode
             String = "Add",
             OnClick = AddCurrentValue,
         };
-        _addRow.AddNode(addButton);
+        addRow.AddNode(addButton);
 
-        AddNode(_addRow);
+        AddNode(addRow);
     }
 
     public void SetList(List<uint> newList)

@@ -5,7 +5,7 @@ using AetherBags.Nodes.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-
+using Lumina.Text.ReadOnly;
 using static AetherBags.Inventory.State.InventoryStateBase;
 
 namespace AetherBags.Nodes.Inventory;
@@ -60,7 +60,7 @@ public sealed class InventoryFooterNode : SimpleComponentNode
             });
     }
 
-    public string SlotAmountText
+    public ReadOnlySeString SlotAmountText
     {
         get => _slotAmountTextNode.String;
         set => _slotAmountTextNode.String = value;

@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
+using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Input;
 
-public class LabeledDropdownNode : SimpleComponentNode {
+public class LabeledDropdownNode<T> : SimpleComponentNode where T : Enum {
     private readonly GridNode _gridNode;
     private readonly TextNode _labelNode;
-    private readonly TextDropDownNode _dropDownNode;
+    private readonly EnumDropDownNode<T> _dropDownNode;
 
     public LabeledDropdownNode() {
         _gridNode = new GridNode {
@@ -17,12 +18,12 @@ public class LabeledDropdownNode : SimpleComponentNode {
         _gridNode.AttachNode(this);
 
         _labelNode = new LabelTextNode {
-            String = String.Empty,
+            String = string.Empty,
         };
         _labelNode.AttachNode(_gridNode[0, 0]);
 
-        _dropDownNode = new TextDropDownNode {
-            Options = new List<string>(),
+        _dropDownNode = new EnumDropDownNode<T> {
+            Options = new List<T>(),
         };
         _dropDownNode.AttachNode(_gridNode[1, 0]);
     }
@@ -36,25 +37,32 @@ public class LabeledDropdownNode : SimpleComponentNode {
         _dropDownNode.Size = _gridNode[1, 0].Size;
     }
 
-    public required string LabelText
+    public required ReadOnlySeString LabelText
     {
         get => _labelNode.String;
         set => _labelNode.String = value;
     }
 
-    public Action<string>? OnOptionSelected
+    public Action<T>? OnOptionSelected
     {
         get => _dropDownNode.OnOptionSelected;
         set => _dropDownNode.OnOptionSelected = value;
     }
 
-    public string? SelectedOption
+    public T? SelectedOption
     {
-        get => _dropDownNode.SelectedOption;
-        set => _dropDownNode.SelectedOption = value;
+        get => _dropDownNode.OptionListNode.SelectedOption;
+        set
+        {
+            _dropDownNode.OptionListNode.SelectedOption = value;
+            if (value != null)
+            {
+                _dropDownNode.LabelNode.String = value.Description;
+            }
+        }
     }
 
-    public required List<string> Options
+    public required List<T> Options
     {
         get => _dropDownNode.Options!;
         set => _dropDownNode.Options = value;
