@@ -10,11 +10,11 @@ permissions:
 
 jobs:
   release:
-    uses: Lunatory/DalamudRepo/.github/workflows/reusable_create_release.yml@master
+    uses: Lunatory/DalamudRepo/.github/workflows/reusable_create_release_arch.yml@master
     with:
       internal_name: AetherBags
       solution_name: AetherBags
-      build_configuration: x64/Release
+      build_configuration: Release
       personal_plugin_repo: Lunatory/DalamudRepo
       personal_plugin_repo_branch: master
     secrets: inherit
